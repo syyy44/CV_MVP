@@ -1,0 +1,210 @@
+{
+  "questions": [
+    {
+      "question": "请介绍你设计的 LangGraph 筛选工作流：状态结构是什么、哪些节点可能失败、路由如何处理失败？",
+      "competency": "LLM 工作流编排",
+      "difficulty": "senior",
+      "scoring_criteria": [
+        "能描述类型化状态与明确节点边界",
+        "能解释失败路径的条件路由，而非仅描述理想路径"
+      ],
+      "good_answer_signals": [
+        "能说出具体状态字段与 reducer",
+        "提到重复失败时短路到复核/暂停状态"
+      ],
+      "red_flags": [
+        "无法说明节点连续失败两次时的处理"
+      ]
+    },
+    {
+      "question": "简历提到对无效 LLM 输出做有界修复重试。修复 prompt 包含什么？为何限制重试次数？",
+      "competency": "结构化输出可靠性",
+      "difficulty": "senior",
+      "scoring_criteria": [
+        "修复 prompt 含 schema、校验错误与无效输出",
+        "能从成本/延迟与失败可见性解释有界重试"
+      ],
+      "good_answer_signals": [
+        "区分解析错误与 schema 违规",
+        "说明重试耗尽后的系统行为"
+      ],
+      "red_flags": [
+        "建议无限重试直到校验通过"
+      ]
+    },
+    {
+      "question": "你如何决定 Langfuse 追踪记录哪些信息？同事如何用追踪定位过一次回归？",
+      "competency": "LLM 可观测性",
+      "difficulty": "senior",
+      "scoring_criteria": [
+        "能说出 span 级元数据（prompt 版本、token、延迟、校验状态）",
+        "给出具体排障故事而非功能清单"
+      ],
+      "good_answer_signals": [
+        "将追踪数据与具体修复或回滚关联",
+        "提到追踪与业务产物的关联"
+      ],
+      "red_flags": [
+        "把追踪当作无人消费的日志"
+      ]
+    },
+    {
+      "question": "描述你在 CI 中门禁 prompt 变更的评测 fixture。失败时长什么样？谁处理？",
+      "competency": "LLM 评测实践",
+      "difficulty": "senior",
+      "scoring_criteria": [
+        "fixture 覆盖 schema 有效性与质量断言",
+        "失败评测能阻断合并并给出可行动输出"
+      ],
+      "good_answer_signals": [
+        "提到与 live 模型检查分离的确定性 fixture",
+        "描述 prompt 演进时如何维护 fixture"
+      ],
+      "red_flags": [
+        "评测仅为人工抽查"
+      ]
+    },
+    {
+      "question": "你的 FastAPI 服务日均 4 万次请求。流量增长时最先出现什么问题？你如何调整？",
+      "competency": "后端运维",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "识别真实瓶颈（连接池、worker 模型、慢依赖）",
+        "优化前有度量依据"
+      ],
+      "good_answer_signals": [
+        "给出具体延迟或错误率数字",
+        "说明发现问题所用的监控"
+      ],
+      "red_flags": [
+        "声称从未出现问题"
+      ]
+    },
+    {
+      "question": "如何为被急躁 UI 调用的长时 LLM 工作流 API 设计幂等运行创建？",
+      "competency": "API 设计",
+      "difficulty": "senior",
+      "scoring_criteria": [
+        "提出幂等键或去重语义",
+        "覆盖后台执行与状态轮询"
+      ],
+      "good_answer_signals": [
+        "考虑双击、刷新与重试语义",
+        "定义含部分失败的清晰运行状态"
+      ],
+      "red_flags": [
+        "阻塞请求线程直到工作流完成"
+      ]
+    },
+    {
+      "question": "ResumeLab 用 Chroma 对 JD 库做检索。检索实际改善了什么？如何度量？",
+      "competency": "检索与 grounding",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "说明检索目标而非堆砌术语",
+        "有前后对比或评测"
+      ],
+      "good_answer_signals": [
+        "讨论分块或 embedding 权衡",
+        "承认检索未起作用的场景"
+      ],
+      "red_flags": [
+        "说不清检索对输出质量的影响"
+      ]
+    },
+    {
+      "question": "某 prompt 变更改善一类 JD 却静默损害另一类。工作流如何在上线前发现？",
+      "competency": "回归安全",
+      "difficulty": "senior",
+      "scoring_criteria": [
+        "评测集覆盖多类别并有分类断言",
+        "prompt 版本化支持对比与回滚"
+      ],
+      "good_answer_signals": [
+        "提到 CI 中的基线对比",
+        "提到追踪层的 prompt 版本归因"
+      ],
+      "red_flags": [
+        "仅依赖人工抽查样例输出"
+      ]
+    },
+    {
+      "question": "如何防御候选人文档中嵌入的指令对 LLM 筛选流水线的攻击？",
+      "competency": "LLM 安全",
+      "difficulty": "senior",
+      "scoring_criteria": [
+        "将文档文本视为不受信任数据并设 prompt 边界",
+        "有检测/标记与对抗性测试 fixture"
+      ],
+      "good_answer_signals": [
+        "提到 LLM 外的确定性评分",
+        "提到 CI 中的红队 fixture"
+      ],
+      "red_flags": [
+        "假设模型会自动忽略注入指令"
+      ]
+    },
+    {
+      "question": "你在杭州云仓科技引入 Docker 与 GitHub Actions CI。遇到哪些阻力？如何推动团队采纳？",
+      "competency": "工程影响力",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "有具体采纳故事与权衡",
+        "体现对团队工作流的理解"
+      ],
+      "good_answer_signals": [
+        "提到渐进式推广",
+        "提到可度量结果（构建时间、部署失败减少）"
+      ],
+      "red_flags": [
+        "描述为无团队结果的单方面强制"
+      ]
+    }
+  ],
+  "follow_ups": [
+    {
+      "question": "日均 4 万次请求对应的 p95 延迟是多少？如何度量？",
+      "ambiguity": "给出了流量规模但未说明延迟或度量方法。",
+      "what_to_listen_for": "具体分位延迟数字及产生该数据的工具。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 4
+        }
+      ]
+    },
+    {
+      "question": "CI 评测 fixture 实际阻断过哪次 prompt 变更？问题是什么？",
+      "ambiguity": "声称有评测门禁但未描述被阻断的具体变更。",
+      "what_to_listen_for": "具体回归故事与失败断言。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 8
+        }
+      ]
+    },
+    {
+      "question": "筛选工作流中多大比例运行会进入修复节点？最常见校验失败是什么？",
+      "ambiguity": "存在修复节点但真实命中率未知。",
+      "what_to_listen_for": "熟悉实际失败分布，而非仅架构描述。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 5
+        }
+      ]
+    },
+    {
+      "question": "ResumeLab 哪些部分是你负责、哪些来自贡献者？现在会如何重设计？",
+      "ambiguity": "开源项目 ownership 边界未说明。",
+      "what_to_listen_for": "诚实的贡献归属与具体重设计想法。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 12
+        }
+      ]
+    }
+  ]
+}

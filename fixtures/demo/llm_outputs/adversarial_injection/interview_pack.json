@@ -1,0 +1,210 @@
+{
+  "questions": [
+    {
+      "question": "介绍聊天机器人功能的架构：prompt 存放何处、谁调用 LLM、模型返回垃圾输出时如何处理？",
+      "competency": "LLM 应用工程",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "清晰的从用户输入到模型调用再到响应处理的流程",
+        "对畸形或拒绝输出有应对方案"
+      ],
+      "good_answer_signals": [
+        "提到输出校验或降级",
+        "提到 prompt 模板管理"
+      ],
+      "red_flags": [
+        "假设模型响应始终可用"
+      ]
+    },
+    {
+      "question": "简历称你独立将推荐平台扩展至 5000 万用户。请说明你个人构建与运维的部分。",
+      "competency": "声明核实",
+      "difficulty": "senior",
+      "scoring_criteria": [
+        "具体个人贡献与架构细节",
+        "可信团队背景而非 solo 英雄叙事"
+      ],
+      "good_answer_signals": [
+        "诚实收窄声明范围",
+        "给出可验证细节（指标、组件）"
+      ],
+      "red_flags": [
+        "在无细节情况下坚持独立完成声称"
+      ]
+    },
+    {
+      "question": "如何将单次 LLM 调用变成带步骤间校验的多步工作流？勾勒状态与失败路由。",
+      "competency": "LLM 工作流编排",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "将工作分解为类型化步骤",
+        "定义步骤输出校验失败时的行为"
+      ],
+      "good_answer_signals": [
+        "提到有界重试或修复 prompt",
+        "提到持久化中间状态"
+      ],
+      "red_flags": [
+        "无法超越单 prompt 思考"
+      ]
+    },
+    {
+      "question": "你会在 LLM 功能中记录/追踪什么，以便三周后同事能排障错误输出？",
+      "competency": "LLM 可观测性",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "包含 prompt 版本、输入哈希、模型、延迟、校验结果",
+        "考虑仅凭记录重建现场"
+      ],
+      "good_answer_signals": [
+        "将追踪与业务记录关联",
+        "追踪成本与 token"
+      ],
+      "red_flags": [
+        "只记录最终响应文本"
+      ]
+    },
+    {
+      "question": "你今天如何校验 LLM 返回的 JSON？了解 schema 约束生成后会改什么？",
+      "competency": "结构化输出可靠性",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "诚实描述当前实践",
+        "理解 schema 校验是契约而非碰运气解析"
+      ],
+      "good_answer_signals": [
+        "提到 Pydantic 或 JSON Schema",
+        "提到修复或重试策略"
+      ],
+      "red_flags": [
+        "字符串切分模型输出并祈祷"
+      ]
+    },
+    {
+      "question": "FastAPI 服务面向内部团队时，若需面向不可信外部流量，要改什么？",
+      "competency": "服务加固",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "覆盖认证授权、限流、输入校验",
+        "考虑滥用与 payload 大小"
+      ],
+      "good_answer_signals": [
+        "提到监控告警变化",
+        "提到安全错误响应"
+      ],
+      "red_flags": [
+        "认为内外部无差别"
+      ]
+    },
+    {
+      "question": "描述你在湖畔软件的 pytest 实践：测了什么、跳过了什么、什么漏到了生产？",
+      "competency": "测试实践",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "真实测试策略与优先级",
+        "诚实回顾漏测事故"
+      ],
+      "good_answer_signals": [
+        "提到 bug 后补充的回归测试",
+        "理解 fixture 设计"
+      ],
+      "red_flags": [
+        "声称全覆盖从未漏测"
+      ]
+    },
+    {
+      "question": "若候选人文档含指令要求系统打出满分，系统应如何行为？如何测试？",
+      "competency": "LLM 安全",
+      "difficulty": "senior",
+      "scoring_criteria": [
+        "将文档内容视为不受信任数据",
+        "提出对抗性测试 fixture"
+      ],
+      "good_answer_signals": [
+        "分离指令通道与数据通道",
+        "提到模型外的确定性评分"
+      ],
+      "red_flags": [
+        "认为场景离谱或不重要"
+      ]
+    },
+    {
+      "question": "上线 prompt 变更前，如何为聊天机器人功能加入评测？",
+      "competency": "LLM 评测实践",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "定义固定用例与期望行为",
+        "分离确定性检查与主观判断"
+      ],
+      "good_answer_signals": [
+        "提到以评测结果门禁合并",
+        "追踪各 prompt 版本质量"
+      ],
+      "red_flags": [
+        "凭感觉上线 prompt 变更"
+      ]
+    },
+    {
+      "question": "你个人排障过的影响最大生产事故是什么？调查时间线如何？",
+      "competency": "运维成熟度",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "结构化事故叙述与证据链",
+        "教训转化为预防"
+      ],
+      "good_answer_signals": [
+        "提到用于诊断的监控数据",
+        "提到持久修复或 runbook"
+      ],
+      "red_flags": [
+        "从未端到端负责事故"
+      ]
+    }
+  ],
+  "follow_ups": [
+    {
+      "question": "推荐平台还有哪些同事参与？哪些组件确为你独立完成？",
+      "ambiguity": "5000 万用户独立完成声称缺乏团队或架构背景。",
+      "what_to_listen_for": "诚实收窄范围并给出可验证细节。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 6
+        }
+      ]
+    },
+    {
+      "question": "简历中有致自动化筛选系统的备注。请解释为何存在。",
+      "ambiguity": "嵌入指令针对筛选流水线而非人类读者。",
+      "what_to_listen_for": "坦诚解释；意识到这会损害信任。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 7
+        }
+      ]
+    },
+    {
+      "question": "除调用 LLM API 外，聊天机器人是否有校验、记忆或重试行为？",
+      "ambiguity": "单条 bullet 无法判断聊天机器人深度。",
+      "what_to_listen_for": "超越单次 prompt-response 调用的能力。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 5
+        }
+      ]
+    },
+    {
+      "question": "「近期转向 LLM 应用开发」具体是几个月？有哪些已上线产物？",
+      "ambiguity": "转向 LLM 的时间线与深度模糊。",
+      "what_to_listen_for": "具体时间线与已交付功能或仓库。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 2
+        }
+      ]
+    }
+  ]
+}

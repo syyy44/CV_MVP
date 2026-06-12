@@ -1,0 +1,70 @@
+{
+  "candidate_name": "张敏",
+  "summary": "拥有 4 年前端经验，专注 React 与设计系统；业余学习 Python，简历未描述专业后端或 LLM 工作流交付。",
+  "skills": [
+    "JavaScript",
+    "TypeScript",
+    "React",
+    "Next.js",
+    "CSS",
+    "基础 Python 脚本"
+  ],
+  "work_experiences": [
+    {
+      "title": "前端工程师",
+      "company": "明途电商",
+      "duration": "2021 - 至今",
+      "highlights": [
+        "使用 TypeScript 与 Next.js 构建 React 商城功能",
+        "优化结账漏斗的 Core Web Vitals 指标",
+        "编写小型 Python 脚本批量重命名营销素材"
+      ]
+    },
+    {
+      "title": "初级 Web 开发",
+      "company": "晨曦工作室",
+      "duration": "2019 - 2021",
+      "highlights": [
+        "为本地客户维护 jQuery 与 WordPress 站点"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "作品集站点生成器",
+      "description": "使用 Next.js 与 Tailwind 构建的静态作品集生成器。",
+      "technologies": [
+        "Next.js",
+        "Tailwind"
+      ]
+    }
+  ],
+  "education": [
+    "杭州师范大学 数字媒体 学士，2019"
+  ],
+  "certifications": [],
+  "total_years_experience": 4.0,
+  "seniority_signal": "mid",
+  "evidence": [
+    {
+      "source_type": "resume",
+      "line_no": 2,
+      "section": "摘要"
+    },
+    {
+      "source_type": "resume",
+      "line_no": 6,
+      "section": "工作经历",
+      "requirement_id": "MH1"
+    },
+    {
+      "source_type": "resume",
+      "line_no": 2,
+      "section": "摘要"
+    }
+  ],
+  "missing_or_ambiguous_claims": [
+    "Python 经验仅限于小型工具脚本，未描述专业后端 Python 工作",
+    "简历未提及任何 LLM 工作流、结构化输出校验或可观测性经验"
+  ]
+}

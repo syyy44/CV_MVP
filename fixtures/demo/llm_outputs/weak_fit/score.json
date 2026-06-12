@@ -1,0 +1,90 @@
+{
+  "required_skills": {
+    "score": 40,
+    "band": "weak",
+    "rationale": "Python 仅限小型脚本，未体现专业后端必备技能。"
+  },
+  "preferred_skills": {
+    "score": 45,
+    "band": "weak",
+    "rationale": "前端技能扎实，但与岗位加分项关联有限。"
+  },
+  "experience_relevance": {
+    "score": 55,
+    "band": "adequate",
+    "rationale": "有工程交付经验，但方向偏前端，与后端 AI 岗位相关性中等。"
+  },
+  "project_depth": {
+    "score": 45,
+    "band": "weak",
+    "rationale": "项目多为商城功能，缺乏后端系统深度与 ownership 证据。"
+  },
+  "ai_engineering_maturity": {
+    "score": 30,
+    "band": "weak",
+    "rationale": "仅有业余学习兴趣，无任何 LLM 工作流交付记录，简历未提供足够证据。"
+  },
+  "communication_clarity": {
+    "score": 75,
+    "band": "strong",
+    "rationale": "简历条理清晰、要点明确。"
+  },
+  "confidence": 0.85,
+  "confidence_rationale": "简历内容完整且表述清晰，足以判断与该后端 AI 岗位的明显不匹配。",
+  "match_reasons": [
+    {
+      "reason": "React 与 TypeScript 交付扎实，但与该后端 AI 岗位范围不匹配。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 4
+        }
+      ]
+    },
+    {
+      "reason": "Python 接触仅限于小型工具脚本，而非专业后端服务。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 6,
+          "requirement_id": "MH1"
+        }
+      ]
+    },
+    {
+      "reason": "对 AI 有兴趣但无任何 LLM 工作流交付记录。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 2
+        }
+      ]
+    }
+  ],
+  "missing_must_haves": [
+    {
+      "requirement_id": "MH3",
+      "severity_penalty": 12,
+      "explanation": "任何岗位或项目均未描述多步 LLM 工作流经验。"
+    },
+    {
+      "requirement_id": "MH4",
+      "severity_penalty": 10,
+      "explanation": "未提及 Pydantic 或 JSON Schema 结构化输出校验经验。"
+    },
+    {
+      "requirement_id": "MH5",
+      "severity_penalty": 8,
+      "explanation": "未提及 LLM 可观测性或评测实践。"
+    }
+  ],
+  "unsupported_major_claims": [],
+  "deal_breakers_found": [],
+  "risk_flags": [
+    {
+      "category": "weak_evidence",
+      "description": "Python 经验远低于三年专业门槛（MH1），仅有业余学习与小型脚本。",
+      "evidence": []
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "candidate_name": "Chen Hao",
+  "summary": "Backend developer with four years of Python and FastAPI experience on internal tools, with early LLM application exposure through a chatbot integration and one unverified large-scale claim.",
+  "skills": [
+    "Python",
+    "FastAPI",
+    "Django",
+    "pytest",
+    "prompt templates",
+    "SQL"
+  ],
+  "work_experiences": [
+    {
+      "title": "Backend Developer",
+      "company": "Quantum Retail Tech",
+      "duration": "2021 - present",
+      "highlights": [
+        "Built FastAPI internal services for inventory and pricing teams",
+        "Added a chatbot feature calling an LLM API with prompt templates"
+      ]
+    },
+    {
+      "title": "Junior Developer",
+      "company": "Lakeside Software",
+      "duration": "2019 - 2021",
+      "highlights": [
+        "Maintained Django admin tools and wrote pytest suites"
+      ]
+    }
+  ],
+  "projects": [],
+  "education": [
+    "B.Sc. Software Engineering, Nanjing Tech, 2019"
+  ],
+  "certifications": [],
+  "total_years_experience": 4.0,
+  "seniority_signal": "mid",
+  "evidence": [
+    {
+      "source_type": "resume",
+      "line_no": 3,
+      "section": "Summary",
+      "requirement_id": "MH1"
+    },
+    {
+      "source_type": "resume",
+      "line_no": 6,
+      "section": "Experience",
+      "requirement_id": "MH2"
+    },
+    {
+      "source_type": "resume",
+      "line_no": 7,
+      "section": "Experience",
+      "requirement_id": "MH3"
+    },
+    {
+      "source_type": "resume",
+      "line_no": 10,
+      "section": "Experience"
+    }
+  ],
+  "missing_or_ambiguous_claims": [
+    "Claim of scaling a platform to 50 million users single-handedly has no supporting detail",
+    "LLM work appears limited to single-call chatbot integration; no multi-step orchestration, validation, or observability is described"
+  ]
+}

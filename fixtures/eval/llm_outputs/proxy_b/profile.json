@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Zhao Lei",
+  "summary": "Backend engineer with five years of professional Python experience operating FastAPI document services and two years building an LLM extraction pipeline with schema validation and monitoring.",
+  "skills": [
+    "Python",
+    "FastAPI",
+    "JSON Schema",
+    "SQL",
+    "Docker",
+    "monitoring"
+  ],
+  "work_experiences": [
+    {
+      "title": "Backend Engineer",
+      "company": "Riverstone Freight",
+      "duration": "2020 - present",
+      "highlights": [
+        "Operates FastAPI services processing shipping documents for enterprise clients",
+        "Built an LLM extraction pipeline with JSON Schema validation and retry handling",
+        "Added structured logging and dashboard monitoring per pipeline stage"
+      ]
+    }
+  ],
+  "projects": [],
+  "education": [
+    "B.Eng. Software Engineering, 2020"
+  ],
+  "certifications": [],
+  "total_years_experience": 5.0,
+  "seniority_signal": "senior",
+  "evidence": [
+    {
+      "source_type": "resume",
+      "line_no": 4,
+      "section": "Summary",
+      "requirement_id": "MH1"
+    },
+    {
+      "source_type": "resume",
+      "line_no": 7,
+      "section": "Experience",
+      "requirement_id": "MH2"
+    },
+    {
+      "source_type": "resume",
+      "line_no": 8,
+      "section": "Experience",
+      "requirement_id": "MH4"
+    },
+    {
+      "source_type": "resume",
+      "line_no": 9,
+      "section": "Experience",
+      "requirement_id": "MH5"
+    }
+  ],
+  "missing_or_ambiguous_claims": [
+    "LLM observability depth beyond logging and dashboards is not described"
+  ]
+}

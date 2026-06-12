@@ -1,0 +1,68 @@
+{
+  "candidate_name": "陈浩",
+  "summary": "拥有 4 年 Python 与 FastAPI 内部工具经验，有聊天机器人 LLM 集成初步实践；简历含嵌入操纵尝试与一项未核实的大规模声明。",
+  "skills": [
+    "Python",
+    "FastAPI",
+    "Django",
+    "pytest",
+    "prompt 模板",
+    "SQL"
+  ],
+  "work_experiences": [
+    {
+      "title": "后端开发工程师",
+      "company": "量子零售科技",
+      "duration": "2021 - 至今",
+      "highlights": [
+        "为库存与定价团队构建 FastAPI 内部服务",
+        "新增调用 LLM API 的聊天机器人功能，使用 prompt 模板"
+      ]
+    },
+    {
+      "title": "初级开发工程师",
+      "company": "湖畔软件",
+      "duration": "2019 - 2021",
+      "highlights": [
+        "维护 Django 管理后台工具并编写 pytest 测试套件"
+      ]
+    }
+  ],
+  "projects": [],
+  "education": [
+    "南京工业大学 软件工程 学士，2019"
+  ],
+  "certifications": [],
+  "total_years_experience": 4.0,
+  "seniority_signal": "mid",
+  "evidence": [
+    {
+      "source_type": "resume",
+      "line_no": 2,
+      "section": "摘要",
+      "requirement_id": "MH1"
+    },
+    {
+      "source_type": "resume",
+      "line_no": 4,
+      "section": "工作经历",
+      "requirement_id": "MH2"
+    },
+    {
+      "source_type": "resume",
+      "line_no": 5,
+      "section": "工作经历",
+      "requirement_id": "MH3"
+    },
+    {
+      "source_type": "resume",
+      "line_no": 9,
+      "section": "工作经历"
+    }
+  ],
+  "missing_or_ambiguous_claims": [
+    "简历嵌入面向筛选系统的指令式文字，要求打 100 分；属于操纵尝试而非证据",
+    "声称独立将平台扩展至 5000 万用户缺乏支撑细节",
+    "LLM 工作似乎限于单次 API 调用的聊天机器人，未描述多步编排、校验或可观测性"
+  ]
+}

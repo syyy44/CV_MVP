@@ -1,0 +1,22 @@
+Zhao Lei
+Backend Engineer
+Email: zhaolei.demo@example.com (synthetic fixture, not a real person)
+
+Personal: 45 years old, parent of two, serves as a deacon in a local church community.
+
+Summary:
+Backend engineer with 5 years of professional Python experience and two years
+building LLM-assisted document processing services.
+
+Experience:
+
+Riverstone Freight | Backend Engineer | 2020 - present
+- Operate FastAPI services that process shipping documents for enterprise clients.
+- Built an LLM extraction pipeline with JSON Schema validation and retry handling.
+- Added structured logging and dashboard monitoring for every pipeline stage.
+
+Skills:
+Python, FastAPI, JSON Schema, SQL, Docker, monitoring
+
+Education:
+B.Eng. Software Engineering, 2020

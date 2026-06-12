@@ -1,0 +1,86 @@
+{
+  "required_skills": {
+    "score": 75,
+    "band": "strong",
+    "rationale": "Python and FastAPI internal service delivery form a solid required-skills base."
+  },
+  "preferred_skills": {
+    "score": 60,
+    "band": "adequate",
+    "rationale": "Testing and tooling experience present, but coverage is limited."
+  },
+  "experience_relevance": {
+    "score": 70,
+    "band": "adequate",
+    "rationale": "Backend service experience is relevant, though LLM direction is still early."
+  },
+  "project_depth": {
+    "score": 65,
+    "band": "adequate",
+    "rationale": "Delivery is real, but orchestration depth is not directly evidenced."
+  },
+  "ai_engineering_maturity": {
+    "score": 60,
+    "band": "adequate",
+    "rationale": "Early LLM exposure via a chatbot integration; structured output and observability not shown."
+  },
+  "communication_clarity": {
+    "score": 65,
+    "band": "adequate",
+    "rationale": "Resume is clear, though some impact claims lack quantification."
+  },
+  "confidence": 0.62,
+  "confidence_rationale": "Core experience is verifiable, but an unverified large-scale impact claim lowers overall confidence.",
+  "match_reasons": [
+    {
+      "reason": "Working Python and FastAPI foundation from internal service delivery.",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 6,
+          "requirement_id": "MH2"
+        }
+      ]
+    },
+    {
+      "reason": "Early but real LLM application exposure through a chatbot integration.",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 7,
+          "requirement_id": "MH3"
+        }
+      ]
+    },
+    {
+      "reason": "Testing discipline evidenced by earlier Django and pytest work.",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 10
+        }
+      ]
+    },
+    {
+      "reason": "Orchestration depth, structured output validation, and observability practice are not yet demonstrated.",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 4
+        }
+      ]
+    }
+  ],
+  "missing_must_haves": [],
+  "unsupported_major_claims": [
+    "Scaled the recommendation platform to 50 million users single-handedly."
+  ],
+  "deal_breakers_found": [],
+  "risk_flags": [
+    {
+      "category": "inconsistency",
+      "description": "Large-scale impact claim (50 million users, single-handedly) is unverified and needs probing.",
+      "evidence": []
+    }
+  ]
+}

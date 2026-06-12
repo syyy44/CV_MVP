@@ -1,0 +1,25 @@
+张敏
+前端工程师
+邮箱：zhangmin.demo@example.com（合成演示数据，非真实个人）
+
+摘要：
+拥有 4 年前端经验，专注 React 应用与设计系统建设；对 AI 产品感兴趣，业余时间在学习 Python。
+
+工作经历：
+
+明途电商 | 前端工程师 | 2021 - 至今
+- 使用 TypeScript 与 Next.js 构建 React 商城功能。
+- 优化结账漏斗的 Core Web Vitals 指标。
+- 编写小型 Python 脚本批量重命名营销素材。
+
+晨曦工作室 | 初级 Web 开发 | 2019 - 2021
+- 为本地客户维护 jQuery 与 WordPress 站点。
+
+项目：
+- 使用 Next.js 与 Tailwind 构建的作品集站点生成器。
+
+技能：
+JavaScript、TypeScript、React、Next.js、CSS、基础 Python 脚本
+
+教育背景：
+杭州师范大学 数字媒体 学士，2019

@@ -1,0 +1,199 @@
+{
+  "questions": [
+    {
+      "question": "描述你在 React 中解决过的最复杂状态管理问题，以及你的推理过程。",
+      "competency": "工程基础",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "解释底层数据流问题，而非仅罗列库名",
+        "展现结构化排障与权衡思维"
+      ],
+      "good_answer_signals": [
+        "讨论不变量与失败场景",
+        "能泛化到 React 之外"
+      ],
+      "red_flags": [
+        "只报库名不解释问题"
+      ]
+    },
+    {
+      "question": "请概念性逐段介绍你写过的 Python 脚本：输入、失败模式、如何让同事安全运行。",
+      "competency": "Python 深度",
+      "difficulty": "junior",
+      "scoring_criteria": [
+        "理解错误处理与输入校验基础",
+        "能说明生产化还需什么"
+      ],
+      "good_answer_signals": [
+        "主动提到测试、日志或参数校验",
+        "诚实承认当前缺口"
+      ],
+      "red_flags": [
+        "说不清自己脚本的失败行为"
+      ]
+    },
+    {
+      "question": "HTTP 请求从浏览器到后端的生命周期是什么？可能在哪些环节失败？",
+      "competency": "后端基础",
+      "difficulty": "junior",
+      "scoring_criteria": [
+        "概念性覆盖 DNS/TLS/路由/服务处理",
+        "指出至少三个失败点"
+      ],
+      "good_answer_signals": [
+        "提到超时与重试",
+        "理解状态码语义"
+      ],
+      "red_flags": [
+        "把后端当作黑盒"
+      ]
+    },
+    {
+      "question": "若要用 LLM API 总结商品评价供 UI 渲染，如何让输出足够可靠？",
+      "competency": "AI 工程潜力",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "提出明确输出结构与校验",
+        "考虑失败与重试行为"
+      ],
+      "good_answer_signals": [
+        "提到 schema 校验或防御性解析",
+        "考虑 UI 降级状态"
+      ],
+      "red_flags": [
+        "假设模型输出可直接渲染"
+      ]
+    },
+    {
+      "question": "你如何度量简历提到的 Core Web Vitals 改善？具体哪些改动推动了数字？",
+      "competency": "度量纪律",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "说出指标与度量工具",
+        "将改善归因到具体变更"
+      ],
+      "good_answer_signals": [
+        "给出前后数值",
+        "理解实验室与现场数据差异"
+      ],
+      "red_flags": [
+        "无法将变更与度量结果关联"
+      ]
+    },
+    {
+      "question": "队列与同步 API 调用的区别是什么？慢 AI 任务何时选哪种？",
+      "competency": "系统思维",
+      "difficulty": "junior",
+      "scoring_criteria": [
+        "理解阻塞与后台处理",
+        "考虑长任务的用户反馈"
+      ],
+      "good_answer_signals": [
+        "提到状态轮询或通知",
+        "考虑重试与重复提交"
+      ],
+      "red_flags": [
+        "对长时任务无直觉"
+      ]
+    },
+    {
+      "question": "讲述一次在截止日期前学习全新技术的经历。你的学习循环是什么？",
+      "competency": "学习速度",
+      "difficulty": "junior",
+      "scoring_criteria": [
+        "具体学习策略与反馈闭环",
+        "有结果证据而非热情口号"
+      ],
+      "good_answer_signals": [
+        "做小项目验证理解",
+        "向资深工程师寻求 review"
+      ],
+      "red_flags": [
+        "只看教程无产出"
+      ]
+    },
+    {
+      "question": "如何测试表单密集的结账流程？从单元到端到端描述各层。",
+      "competency": "测试实践",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "区分测试层次与目的",
+        "考虑 flaky 测试成本"
+      ],
+      "good_answer_signals": [
+        "提到契约或集成边界",
+        "按风险优先级排序"
+      ],
+      "red_flags": [
+        "认为手工 QA 足够"
+      ]
+    },
+    {
+      "question": "你目前在 Python 后端学什么？用它们实际构建了什么？",
+      "competency": "成长轨迹",
+      "difficulty": "junior",
+      "scoring_criteria": [
+        "具体、可验证的当前学习产物",
+        "对本岗位有现实自我评估"
+      ],
+      "good_answer_signals": [
+        "有可展示的仓库或脚本",
+        "说出具体下一步里程碑"
+      ],
+      "red_flags": [
+        "学习声称无产物支撑"
+      ]
+    },
+    {
+      "question": "若录用你做 AI 工具前端而非本岗位，如何让 LLM 筛选 UI 对招聘方可信？",
+      "competency": "产品感",
+      "difficulty": "mid",
+      "scoring_criteria": [
+        "关注证据、不确定性与人工覆盖",
+        "考虑失败与加载状态"
+      ],
+      "good_answer_signals": [
+        "展示分数背后的证据",
+        "提到人工覆盖与审计轨迹"
+      ],
+      "red_flags": [
+        "只讨论视觉样式"
+      ]
+    }
+  ],
+  "follow_ups": [
+    {
+      "question": "除重命名素材外，你端到端写过的最复杂 Python 程序是什么？",
+      "ambiguity": "仅有 trivial 脚本证据，真实 Python 深度未知。",
+      "what_to_listen_for": "超越单文件脚本：模块、测试、错误处理。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 6
+        }
+      ]
+    },
+    {
+      "question": "「业余时间在学习 Python」本月具体包含什么？",
+      "ambiguity": "学习声称无课程、项目或产物佐证。",
+      "what_to_listen_for": "具体材料、节奏与产出物。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 2
+        }
+      ]
+    },
+    {
+      "question": "哪项 Core Web Vitals 指标改善了多少？在哪些页面？",
+      "ambiguity": "声称改善但无数字或范围。",
+      "what_to_listen_for": "真实指标名与幅度；未知时诚实说明。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 5
+        }
+      ]
+    }
+  ]
+}

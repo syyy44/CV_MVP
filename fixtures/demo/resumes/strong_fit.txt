@@ -1,0 +1,28 @@
+李伟
+后端 AI 工程师
+邮箱：liwei.demo@example.com（合成演示数据，非真实个人）
+
+摘要：
+拥有 6 年专业 Python 后端经验，近 3 年专注于 LLM 工作流平台。
+
+工作经历：
+
+凌云数据系统 | 高级后端工程师 | 2022 - 至今
+- 构建并运维日均 4 万次请求的生产级 FastAPI 服务。
+- 设计基于 LangGraph 的文档筛选工作流，包含校验与修复节点。
+- 使用 Pydantic 模式强制执行结构化 LLM 输出，并设定了有界修复重试。
+- 为每个工作流节点接入 Langfuse 追踪、token 统计与延迟指标。
+- 维护用于在 CI 中门禁 prompt 变更的评测 fixture。
+
+杭州云仓科技 | 后端工程师 | 2019 - 2022
+- 开发基于 PostgreSQL 和 Redis 的 Python 微服务。
+- 为团队引入基于 Docker 的部署与 GitHub Actions CI。
+
+项目：
+- ResumeLab（开源）：使用 LangGraph 的文档到决策流水线，配合 Pydantic 校验与 Chroma 检索。
+
+技能：
+Python、FastAPI、LangGraph、Pydantic、Langfuse、Docker、PostgreSQL、SQLite、pytest、GitHub Actions
+
+教育背景：
+浙江大学 计算机科学 学士，2019

@@ -1,0 +1,65 @@
+{
+  "role_title": "后端 AI 工程师（LLM 工作流平台）",
+  "must_have_requirements": [
+    {
+      "id": "MH1",
+      "text": "至少 3 年专业 Python 后端工程经验。",
+      "severity_penalty": 12
+    },
+    {
+      "id": "MH2",
+      "text": "具备 FastAPI 或同类异步 Python Web 框架的生产经验。",
+      "severity_penalty": 10
+    },
+    {
+      "id": "MH3",
+      "text": "在生产或严肃 side project 中有多步 LLM 工作流编排实战经验。",
+      "severity_penalty": 12
+    },
+    {
+      "id": "MH4",
+      "text": "有使用 Pydantic 或 JSON Schema 强制执行结构化 LLM 输出的经验。",
+      "severity_penalty": 10
+    },
+    {
+      "id": "MH5",
+      "text": "了解 LLM 可观测性与评测实践，例如 Langfuse 追踪。",
+      "severity_penalty": 8
+    }
+  ],
+  "nice_to_have_requirements": [
+    {
+      "id": "NH1",
+      "text": "有向量检索或基于 embedding 的搜索经验。",
+      "severity_penalty": 8
+    },
+    {
+      "id": "NH2",
+      "text": "有为 LLM 系统设计评测数据集的经验。",
+      "severity_penalty": 8
+    },
+    {
+      "id": "NH3",
+      "text": "对开源 AI 工具有贡献。",
+      "severity_penalty": 8
+    }
+  ],
+  "deal_breakers": [
+    "完全没有专业 Python 经验。",
+    "不愿意编写测试或文档。"
+  ],
+  "seniority_expectations": "能端到端负责 LLM 工作流服务的中高级后端工程师。",
+  "domain_signals": [
+    "LLM 工作流编排",
+    "结构化输出校验",
+    "LLM 可观测性与评测"
+  ],
+  "evaluation_weights": {
+    "required_skills": 0.35,
+    "preferred_skills": 0.15,
+    "experience_relevance": 0.2,
+    "project_depth": 0.15,
+    "ai_engineering_maturity": 0.1,
+    "communication_clarity": 0.05
+  }
+}

@@ -1,0 +1,18 @@
+services:
+  api:
+    build: .
+    environment:
+      DEMO_MODE: ${DEMO_MODE:-replay}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-dashscope}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      MODEL_NAME: ${MODEL_NAME:-}
+      ENABLE_LANGFUSE: ${ENABLE_LANGFUSE:-false}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
+    volumes:
+      - ./data:/srv/data
+    # API + the built React SPA are served from the same origin on :8000.
+    ports:
+      - "8000:8000"

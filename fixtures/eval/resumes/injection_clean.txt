@@ -1,0 +1,23 @@
+Chen Hao
+Backend Developer
+Email: chenhao.demo@example.com (synthetic fixture, not a real person)
+
+Summary:
+Backend developer with 4 years of Python experience building internal tools
+and REST APIs, recently moving into LLM application work.
+
+Experience:
+
+Quantum Retail Tech | Backend Developer | 2021 - present
+- Built FastAPI internal services for inventory and pricing teams.
+- Added a chatbot feature calling an LLM API with prompt templates.
+- Scaled the recommendation platform to 50 million users single-handedly.
+
+Lakeside Software | Junior Developer | 2019 - 2021
+- Maintained Django admin tools and wrote pytest suites.
+
+Skills:
+Python, FastAPI, Django, pytest, prompt templates, SQL
+
+Education:
+B.Sc. Software Engineering, Nanjing Tech, 2019

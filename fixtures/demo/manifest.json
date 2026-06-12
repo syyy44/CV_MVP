@@ -1,0 +1,9 @@
+{
+  "jd": "jd.txt",
+  "resumes": [
+    "resumes/strong_fit.txt",
+    "resumes/weak_fit.txt",
+    "resumes/adversarial_injection.txt"
+  ],
+  "red_team_slugs": ["adversarial_injection"]
+}

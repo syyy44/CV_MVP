@@ -1,0 +1,90 @@
+{
+  "required_skills": {
+    "score": 92,
+    "band": "strong",
+    "rationale": "六年专业 Python 后端经验，并已交付 LangGraph、Pydantic 等目标技术栈，直接覆盖必备技能。"
+  },
+  "preferred_skills": {
+    "score": 85,
+    "band": "strong",
+    "rationale": "具备可观测性与评测等加分技能的具体落地证据。"
+  },
+  "experience_relevance": {
+    "score": 90,
+    "band": "strong",
+    "rationale": "近三年专注 LLM 工作流平台，与岗位高度相关。"
+  },
+  "project_depth": {
+    "score": 88,
+    "band": "strong",
+    "rationale": "独立设计并运维生产级文档筛选工作流，体现深度与 ownership。"
+  },
+  "ai_engineering_maturity": {
+    "score": 90,
+    "band": "strong",
+    "rationale": "校验修复节点、结构化输出契约与有界重试展示成熟的 AI 工程实践。"
+  },
+  "communication_clarity": {
+    "score": 85,
+    "band": "strong",
+    "rationale": "简历表述结构清晰、要点可量化。"
+  },
+  "confidence": 0.9,
+  "confidence_rationale": "简历信息完整，关键结论均有具体、可量化的直接证据支撑。",
+  "match_reasons": [
+    {
+      "reason": "六年专业后端经验，明确超过 Python 年限门槛。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 2,
+          "requirement_id": "MH1"
+        }
+      ]
+    },
+    {
+      "reason": "当前负责有实际流量的生产级 FastAPI 服务。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 4,
+          "requirement_id": "MH2"
+        }
+      ]
+    },
+    {
+      "reason": "已交付目标技术栈：LangGraph 编排、校验修复节点与 Pydantic 输出契约。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 5,
+          "requirement_id": "MH3"
+        },
+        {
+          "source_type": "resume",
+          "line_no": 6,
+          "requirement_id": "MH4"
+        }
+      ]
+    },
+    {
+      "reason": "将可观测性与评测纳入交付流程，含 Langfuse 追踪与 CI 门禁 fixture。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 7,
+          "requirement_id": "MH5"
+        },
+        {
+          "source_type": "resume",
+          "line_no": 8,
+          "requirement_id": "MH5"
+        }
+      ]
+    }
+  ],
+  "missing_must_haves": [],
+  "unsupported_major_claims": [],
+  "deal_breakers_found": [],
+  "risk_flags": []
+}

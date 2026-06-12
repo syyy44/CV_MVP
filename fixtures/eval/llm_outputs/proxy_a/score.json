@@ -1,0 +1,86 @@
+{
+  "required_skills": {
+    "score": 80,
+    "band": "strong",
+    "rationale": "Five years of professional Python on production backend services cover the core required skills."
+  },
+  "preferred_skills": {
+    "score": 65,
+    "band": "adequate",
+    "rationale": "Some preferred tooling experience, though coverage is partial."
+  },
+  "experience_relevance": {
+    "score": 75,
+    "band": "strong",
+    "rationale": "Current FastAPI document services map directly to the role."
+  },
+  "project_depth": {
+    "score": 70,
+    "band": "adequate",
+    "rationale": "Real pipeline delivery, but end-to-end ownership depth is only partly evidenced."
+  },
+  "ai_engineering_maturity": {
+    "score": 70,
+    "band": "adequate",
+    "rationale": "An LLM extraction pipeline with schema validation shows solid but not deep maturity."
+  },
+  "communication_clarity": {
+    "score": 75,
+    "band": "strong",
+    "rationale": "Resume is well structured with concrete, quantified points."
+  },
+  "confidence": 0.8,
+  "confidence_rationale": "Resume is complete and key claims are backed by concrete, verifiable evidence.",
+  "match_reasons": [
+    {
+      "reason": "Five years of professional Python work on production backend services.",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 4,
+          "requirement_id": "MH1"
+        }
+      ]
+    },
+    {
+      "reason": "Currently operates FastAPI document services for enterprise clients.",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 7,
+          "requirement_id": "MH2"
+        }
+      ]
+    },
+    {
+      "reason": "Has built an LLM extraction pipeline with schema validation and retry handling.",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 8,
+          "requirement_id": "MH4"
+        }
+      ]
+    },
+    {
+      "reason": "Monitoring practice exists, though dedicated LLM tracing depth is unproven.",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 9,
+          "requirement_id": "MH5"
+        }
+      ]
+    }
+  ],
+  "missing_must_haves": [],
+  "unsupported_major_claims": [],
+  "deal_breakers_found": [],
+  "risk_flags": [
+    {
+      "category": "weak_evidence",
+      "description": "Dedicated LLM trace tooling such as Langfuse is not explicitly evidenced.",
+      "evidence": []
+    }
+  ]
+}

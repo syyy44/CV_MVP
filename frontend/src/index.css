@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Data-Dense Dashboard, dark slate (ui-ux-pro-max recommendation) */
+    --background: 222 47% 4%; /* #020617 slate-950 */
+    --foreground: 210 40% 98%; /* #F8FAFC slate-50 */
+    --card: 222 44% 8%; /* ~#0B1220 */
+    --card-foreground: 210 40% 98%;
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 65%; /* slate-400-ish, AA on dark */
+    --secondary: 217 33% 17%; /* #1E293B slate-800 */
+    --secondary-foreground: 210 40% 96%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+    --primary: 142 71% 45%; /* #22C55E green-500 */
+    --primary-foreground: 222 47% 6%;
+    --border: 215 28% 20%;
+    --input: 215 28% 22%;
+    --ring: 142 71% 45%;
+
+    --proceed: 142 71% 45%; /* green */
+    --proceed-foreground: 142 80% 90%;
+    --hold: 38 92% 50%; /* amber */
+    --hold-foreground: 38 95% 92%;
+    --reject: 0 72% 51%; /* red */
+    --reject-foreground: 0 90% 94%;
+
+    --radius: 0.625rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04";
+  }
+
+  /* Subtle grid backdrop for the dashboard surface */
+  body {
+    background-image:
+      radial-gradient(circle at 18% -10%, hsl(142 71% 45% / 0.07), transparent 42%),
+      radial-gradient(circle at 92% 0%, hsl(217 91% 60% / 0.06), transparent 38%);
+    background-attachment: fixed;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-secondary;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
