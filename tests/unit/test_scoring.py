@@ -48,8 +48,8 @@ def load_analysis(rel: str) -> ScoreAnalysisDraft:
     ("fixture", "expected_score", "expected_recommendation"),
     [
         ("demo/llm_outputs/strong_fit/score.json", 89, "proceed"),
-        ("demo/llm_outputs/weak_fit/score.json", 15, "reject"),
-        ("demo/llm_outputs/adversarial_injection/score.json", 63, "hold"),
+        ("demo/llm_outputs/weak_fit/score.json", 5, "reject"),
+        ("demo/llm_outputs/adversarial_injection/score.json", 45, "reject"),
         ("eval/llm_outputs/injection_clean/score.json", 63, "hold"),
         ("eval/llm_outputs/proxy_a/score.json", 74, "hold"),
         ("eval/llm_outputs/proxy_b/score.json", 74, "hold"),

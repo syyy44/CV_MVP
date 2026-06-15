@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
-import type { RunStatusResponse } from "@/lib/types";
+import type { Recommendation, RunStatusResponse } from "@/lib/types";
 
-const POLL_MS = 2000;
+const POLL_MS = 1000;
 
 function isActive(status: string | undefined): boolean {
   return status === "queued" || status === "running";
@@ -15,6 +15,14 @@ export function useHealth() {
     queryFn: () => api.health(),
     refetchInterval: 15000,
     retry: 0,
+  });
+}
+
+export function useRunHistory() {
+  return useQuery({
+    queryKey: ["runs"],
+    queryFn: () => api.listRuns(),
+    staleTime: 10_000,
   });
 }
 
@@ -37,30 +45,56 @@ export function useEvents(runId: string | null, active: boolean) {
   });
 }
 
-export function useEvals(enabled: boolean) {
+export function useCompare(
+  runId: string | null,
+  aId: string | null,
+  bId: string | null,
+) {
   return useQuery({
-    queryKey: ["evals"],
-    queryFn: () => api.getEvals(),
-    enabled,
+    queryKey: ["compare", runId, aId, bId],
+    queryFn: () => api.getComparison(runId as string, aId as string, bId as string),
+    enabled: Boolean(runId && aId && bId),
+    staleTime: Infinity,
     retry: 0,
   });
 }
 
-export function useAuditExport(runId: string | null, enabled: boolean) {
+export function useInterviewScript(candidateId: string | null) {
   return useQuery({
-    queryKey: ["audit-export", runId],
-    queryFn: () => api.getAuditExport(runId as string),
-    enabled: Boolean(runId) && enabled,
-    retry: 0,
-  });
-}
-
-export function useInterviewPreview(candidateId: string | null) {
-  return useQuery({
-    queryKey: ["interview-preview", candidateId],
-    queryFn: () => api.getInterviewPreview(candidateId as string),
+    queryKey: ["interview-script", candidateId],
+    queryFn: () => api.getInterviewScript(candidateId as string),
     enabled: Boolean(candidateId),
-    retry: 0,
+    staleTime: Infinity,
+  });
+}
+
+export function useNotes(candidateId: string | null) {
+  return useQuery({
+    queryKey: ["notes", candidateId],
+    queryFn: () => api.getNotes(candidateId as string),
+    enabled: Boolean(candidateId),
+  });
+}
+
+export function useAddNote(candidateId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { body: string; author: string }) =>
+      api.addNote(candidateId, input.body, input.author),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes", candidateId] });
+    },
+  });
+}
+
+export function usePatchDecision(candidateId: string, runId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { recommendation: Recommendation; rationale: string }) =>
+      api.patchDecision(candidateId, input.recommendation, input.rationale),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["run", runId] });
+    },
   });
 }
 
@@ -70,10 +104,19 @@ export function useStartRun(onStarted: (runId: string) => void) {
     mutationFn: (input: {
       mode: "replay" | "live";
       jd?: File | null;
+      jdText?: string;
       resumes?: File[];
-    }) => api.startRun(input.mode, { jd: input.jd, resumes: input.resumes }),
+      source?: "upload" | "test";
+    }) =>
+      api.startRun(input.mode, {
+        jd: input.jd,
+        jdText: input.jdText,
+        resumes: input.resumes,
+        source: input.source,
+      }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["run", data.run_id] });
+      queryClient.invalidateQueries({ queryKey: ["runs"] });
       onStarted(data.run_id);
     },
   });

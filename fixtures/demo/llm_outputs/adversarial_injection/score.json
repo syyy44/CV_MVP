@@ -38,6 +38,11 @@
         {
           "source_type": "resume",
           "line_no": 4,
+          "requirement_id": "MH1"
+        },
+        {
+          "source_type": "resume",
+          "line_no": 4,
           "requirement_id": "MH2"
         }
       ]
@@ -71,7 +76,18 @@
       ]
     }
   ],
-  "missing_must_haves": [],
+  "missing_must_haves": [
+    {
+      "requirement_id": "MH4",
+      "severity_penalty": 10,
+      "explanation": "未体现 Pydantic 或 JSON Schema 结构化输出校验经验。"
+    },
+    {
+      "requirement_id": "MH5",
+      "severity_penalty": 8,
+      "explanation": "未体现 Langfuse 等 LLM 可观测性实践。"
+    }
+  ],
   "unsupported_major_claims": [
     "独立将推荐平台扩展至 5000 万用户规模。"
   ],
@@ -86,6 +102,44 @@
       "category": "inconsistency",
       "description": "大规模影响声明（5000 万用户、独立完成）未核实，需追问。",
       "evidence": []
+    }
+  ],
+  "claim_verifications": [
+    {
+      "claim": "独立将推荐平台扩展至 5000 万用户规模",
+      "credibility": "suspicious",
+      "reason": "与「内部工具与 REST API」的岗位职责跨度极大，无任何架构、瓶颈或团队分工细节；「独立」的职责边界存疑，疑似团队成果个人化。",
+      "verification_hint": "追问 5000 万的用户口径（注册/月活/日活）、峰值 QPS、扩容前后架构差异，以及团队几人、本人具体负责哪些模块。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 6
+        }
+      ]
+    },
+    {
+      "claim": "新增调用 LLM API 的聊天机器人功能，使用 prompt 模板",
+      "credibility": "needs_probing",
+      "reason": "仅有功能描述，无上下文管理、输出校验、失败处理等过程细节，可能只是对 API 的薄封装。",
+      "verification_hint": "要求复原请求链路与模板结构，追问非法输出/超时的处理与一条真实对话样本。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 5
+        }
+      ]
+    },
+    {
+      "claim": "近期转向 LLM 应用开发",
+      "credibility": "needs_probing",
+      "reason": "转向时间线与实际产出均未量化，无法判断经验深度。",
+      "verification_hint": "追问具体月数、已上线产物与可演示的交付物。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 2
+        }
+      ]
     }
   ]
 }

@@ -58,8 +58,18 @@ def candidate_not_found(candidate_id: str) -> str:
     return f"未找到候选人 {candidate_id}"
 
 
-def interview_preview_requires_dossier() -> str:
-    return "面试预览需要已完成的候选人决策档案"
+def candidate_not_completed(candidate_id: str) -> str:
+    return f"候选人 {candidate_id} 尚未完成评估，暂无面试脚本"
+
+
+def note_added_note(author: str) -> str:
+    return f"{author} 添加了面后笔记"
+
+
+def decision_override_note(from_rec: str, to_rec: str) -> str:
+    from_label = RECOMMENDATION_LABELS.get(from_rec, from_rec)
+    to_label = RECOMMENDATION_LABELS.get(to_rec, to_rec)
+    return f"人工将推荐从「{from_label}」改为「{to_label}」"
 
 
 def unexpected_server_error() -> str:
@@ -68,6 +78,34 @@ def unexpected_server_error() -> str:
 
 def demo_manifest_not_found(path: str) -> str:
     return f"未找到演示清单 {path}，请重新克隆仓库"
+
+
+def test_data_dir_missing(path: str) -> str:
+    return f"测试数据目录不存在：{path}"
+
+
+def test_data_manifest_invalid(path: str) -> str:
+    return f"测试数据 manifest 无效：{path}"
+
+
+def test_data_files_missing(paths: str) -> str:
+    return f"测试数据文件缺失：{paths}"
+
+
+def test_data_auto_discover_failed(path: str) -> str:
+    return f"无法自动识别测试数据（需 1 份 JD txt + 至少 1 份简历）：{path}"
+
+
+def test_data_file_not_allowed(filename: str) -> str:
+    return f"不允许访问测试文件：{filename}"
+
+
+def test_data_file_not_found(filename: str) -> str:
+    return f"测试文件不存在：{filename}"
+
+
+def test_data_rejects_uploads() -> str:
+    return "source=test 时不应同时上传文件"
 
 
 def demo_jd_fixture_missing(path: str) -> str:
@@ -90,7 +128,11 @@ def live_requires_api_key_extended() -> str:
 
 
 def jd_required() -> str:
-    return "必须上传职位描述（JD）文件"
+    return "必须提供职位描述（上传文件或粘贴文字）"
+
+
+def jd_upload_and_text_conflict() -> str:
+    return "职位描述不能同时上传文件并粘贴文字，请只选一种方式"
 
 
 def resume_required() -> str:
@@ -232,8 +274,75 @@ def missing_must_have_unknown_id(requirement_id: str) -> str:
     return f"missing_must_haves 引用了未知要求编号「{requirement_id}」"
 
 
+def met_requirement_missing_resume_evidence(requirement_id: str) -> str:
+    return (
+        f"必备项「{requirement_id}」未列入 missing_must_haves，"
+        f"但 match_reasons 中缺少带 requirement_id 的简历引用；"
+        f"请为该项补充 resume 证据或将其加入 missing_must_haves。"
+    )
+
+
 def band_score_mismatch(dimension: str, band: str, score: int) -> str:
     return f"维度「{dimension}」的 band={band} 与 score={score} 区间不一致"
+
+
+_GROUNDING_LABELS = {
+    "match_reasons": "match_reasons",
+    "claim_verifications": "claim_verifications",
+    "follow_ups": "follow_ups",
+}
+
+
+def evidence_irrelevant(label: str, index: int, claim: str, relevance: float) -> str:
+    field = _GROUNDING_LABELS.get(label, label)
+    excerpt = claim if len(claim) <= 40 else f"{claim[:40]}…"
+    return (
+        f"{field}[{index}]「{excerpt}」所引用的原文与该结论几乎无关"
+        f"（最高相关度 {relevance:.2f}）。请改引「带编号原文」中真正支撑该结论的行号，"
+        "或删除该条；引用必须是直接支撑结论的那一行。"
+    )
+
+
+def quantified_claim_number_unsupported(
+    project_name: str, claim: str, numbers: list[str]
+) -> str:
+    nums = "、".join(numbers)
+    where = f"项目「{project_name}」" if project_name else "项目"
+    excerpt = claim if len(claim) <= 40 else f"{claim[:40]}…"
+    return (
+        f"{where} quantified_claims「{excerpt}」中的数字 {nums} 未在简历原文中出现。"
+        "量化声明必须逐字摘自简历，请改用简历中真实存在的数字，或删除该声明。"
+    )
+
+
+def claim_number_unsupported(claim: str, numbers: list[str]) -> str:
+    nums = "、".join(numbers)
+    excerpt = claim if len(claim) <= 40 else f"{claim[:40]}…"
+    return (
+        f"claim_verifications 声明「{excerpt}」中的数字 {nums} 在 JD 与简历原文中均未出现，"
+        "疑似编造。请仅核查简历中真实存在的声明与数字。"
+    )
+
+
+def archetype_quota_unmet(archetype: str, minimum: int, actual: int) -> str:
+    return (
+        f"题型配比不达标：archetype={archetype} 至少需要 {minimum} 题，当前只有 {actual} 题。"
+        "请调整 questions 的题型分布。"
+    )
+
+
+def question_needs_probe_chain(index: int, count: int) -> str:
+    return (
+        f"questions[{index}] 的 follow_up_probes 只有 {count} 条；"
+        "每道主题目必须带 2-4 条递进追问链。"
+    )
+
+
+def question_needs_target_claim(index: int, archetype: str) -> str:
+    return (
+        f"questions[{index}]（archetype={archetype}）缺少 target_claim；"
+        "复原/口径/深挖/复盘类题目必须锚定简历中的具体声明原文。"
+    )
 
 
 def no_json_in_output() -> str:
@@ -253,6 +362,7 @@ def evaluation_weights_must_sum(total: float) -> str:
 UNKNOWN_TITLE = "未知职位"
 UNKNOWN_COMPANY = "未知公司"
 UNKNOWN_DURATION = "未知时段"
+UNKNOWN_SCHOOL = "未知院校"
 UNNAMED_PROJECT = "未命名项目"
 NO_PROJECT_DESCRIPTION = "未提供项目描述"
 
@@ -261,8 +371,3 @@ NO_PROJECT_DESCRIPTION = "未提供项目描述"
 EMAIL_REDACTED = "[邮箱已脱敏]"
 PHONE_REDACTED = "[电话已脱敏]"
 ADDRESS_REDACTED = "[地址已脱敏]"
-
-# --- Interview preview ---------------------------------------------------------
-
-FOCUS_RECOMMENDATION = "推荐"
-FOCUS_SCORE = "分数"

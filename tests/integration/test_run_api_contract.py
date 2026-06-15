@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import uuid
 
+from app.workflows.test_data import list_test_data_files
+
 
 def test_idempotency_key_returns_existing_run(client):
     key = uuid.uuid4().hex
@@ -84,6 +86,26 @@ def test_live_mode_upload_contract(client, monkeypatch):
     assert too_large.json()["error"]["code"] == "file_too_large"
 
 
+def test_list_runs_returns_history(replay_run, client):
+    run_id, status = replay_run
+    response = client.get("/api/runs")
+    assert response.status_code == 200
+    items = response.json()
+    assert len(items) >= 1
+    first = items[0]
+    assert first["run"]["run_id"] == run_id
+    assert first["run"]["status"] == "completed"
+    assert first["candidate_count"] == len(status["candidates"])
+    assert first["resume_count"] >= 1
+    assert first["jd_filename"]
+
+
+def test_list_runs_respects_limit(replay_run, client):
+    response = client.get("/api/runs?limit=1")
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
 def test_unknown_run_returns_404_envelope(client):
     response = client.get("/api/runs/does-not-exist")
     assert response.status_code == 404
@@ -92,6 +114,74 @@ def test_unknown_run_returns_404_envelope(client):
     response = client.get("/api/candidates/none/dossier")
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "candidate_not_found"
+
+
+def test_test_data_manifest(client):
+    expected = list_test_data_files()
+
+    response = client.get("/api/test-data")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["jd"]["filename"] == expected.jd.name
+    assert [r["filename"] for r in body["resumes"]] == [p.name for p in expected.resumes]
+
+    file_resp = client.get(body["resumes"][0]["url"])
+    assert file_resp.status_code == 200
+    assert file_resp.content
+    if expected.resumes[0].suffix.lower() == ".pdf":
+        assert file_resp.content[:4] == b"%PDF"
+
+
+def test_live_mode_source_test(client, monkeypatch):
+    expected = list_test_data_files()
+
+    monkeypatch.setenv("LLM_API_KEY", "test-key-not-used")
+    from app.core.config import reset_settings_cache
+
+    reset_settings_cache()
+    response = client.post(
+        "/api/runs?mode=live&source=test",
+        files={"idempotency_key": (None, uuid.uuid4().hex)},
+    )
+    assert response.status_code == 202
+    run_id = response.json()["run_id"]
+    status = client.get(f"/api/runs/{run_id}").json()
+    filenames = {doc["filename"] for doc in status["documents"]}
+    assert expected.jd.name in filenames
+    assert {p.name for p in expected.resumes}.issubset(filenames)
+
+
+def test_live_mode_jd_text(client, monkeypatch):
+    monkeypatch.setenv("LLM_API_KEY", "test-key-not-used")
+    from app.core.config import reset_settings_cache
+
+    reset_settings_cache()
+    response = client.post(
+        "/api/runs?mode=live",
+        data={"jd_text": "a pasted job description"},
+        files={"resumes": ("resume.txt", b"a resume body", "text/plain")},
+    )
+    assert response.status_code == 202
+    run_id = response.json()["run_id"]
+    status = client.get(f"/api/runs/{run_id}").json()
+    assert any(doc["filename"] == "jd.txt" for doc in status["documents"])
+
+
+def test_live_mode_jd_upload_and_text_conflict(client, monkeypatch):
+    monkeypatch.setenv("LLM_API_KEY", "test-key-not-used")
+    from app.core.config import reset_settings_cache
+
+    reset_settings_cache()
+    response = client.post(
+        "/api/runs?mode=live",
+        data={"jd_text": "pasted text"},
+        files={
+            "jd": ("jd.txt", b"uploaded jd", "text/plain"),
+            "resumes": ("resume.txt", b"a resume body", "text/plain"),
+        },
+    )
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "missing_document"
 
 
 def test_health_reports_mode(client):

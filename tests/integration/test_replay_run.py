@@ -8,12 +8,12 @@ def test_replay_run_produces_three_ranked_dossiers(replay_run):
     assert all(c["status"] == "completed" for c in candidates)
 
     scores = [c["dossier"]["score"]["overall_score"] for c in candidates]
-    assert scores == sorted(scores, reverse=True) == [89, 63, 15]
+    assert scores == sorted(scores, reverse=True) == [89, 45, 5]
 
     recommendations = {
         c["candidate_name"]: c["dossier"]["score"]["recommendation"] for c in candidates
     }
-    assert recommendations == {"李伟": "proceed", "陈浩": "hold", "张敏": "reject"}
+    assert recommendations == {"李伟": "proceed", "陈浩": "reject", "张敏": "reject"}
 
 
 def test_replay_run_documents_all_parsed(replay_run):
@@ -50,7 +50,7 @@ def test_replay_run_dossier_contents(replay_run, client):
     _run_id, status = replay_run
     for candidate in status["candidates"]:
         dossier = candidate["dossier"]
-        assert len(dossier["questions"]) >= 10
+        assert len(dossier["questions"]) >= 8
         assert 3 <= len(dossier["follow_ups"]) <= 5
         assert len(dossier["score"]["evidence_refs"]) >= 3
         assert len(dossier["score"]["match_reasons"]) >= 3
@@ -61,6 +61,51 @@ def test_replay_run_dossier_contents(replay_run, client):
         detail = client.get(f"/api/candidates/{candidate['candidate_id']}/dossier")
         assert detail.status_code == 200
         assert detail.json()["candidate_id"] == candidate["candidate_id"]
+
+
+def test_replay_run_deep_interview_pack_quality(replay_run):
+    """v7 packs: archetype mix, probe chains, and claim anchoring everywhere."""
+    _run_id, status = replay_run
+    for candidate in status["candidates"]:
+        questions = candidate["dossier"]["questions"]
+        archetypes = [q["archetype"] for q in questions]
+        assert archetypes.count("experience_probe") >= 2
+        for required in (
+            "metric_validation",
+            "depth_probe",
+            "failure_review",
+            "scenario_design",
+            "jd_fit",
+        ):
+            assert required in archetypes, f"缺少题型 {required}"
+        for question in questions:
+            assert len(question["follow_up_probes"]) >= 2
+            if question["archetype"] in {
+                "experience_probe",
+                "metric_validation",
+                "depth_probe",
+                "failure_review",
+            }:
+                assert question["target_claim"].strip()
+
+
+def test_replay_run_score_claim_verifications(replay_run):
+    _run_id, status = replay_run
+    for candidate in status["candidates"]:
+        claims = candidate["dossier"]["score"]["claim_verifications"]
+        assert len(claims) >= 3
+        for claim in claims:
+            assert claim["credibility"] in {
+                "well_supported",
+                "plausible",
+                "needs_probing",
+                "suspicious",
+            }
+            assert claim["verification_hint"]
+            assert claim["evidence_refs"], "声明核查必须带可定位的简历证据"
+    chen = next(c for c in status["candidates"] if c["candidate_name"] == "陈浩")
+    chen_claims = chen["dossier"]["score"]["claim_verifications"]
+    assert any(c["credibility"] == "suspicious" for c in chen_claims)
 
 
 def test_adversarial_candidate_flags_injection(replay_run):
@@ -76,22 +121,3 @@ def test_adversarial_candidate_flags_injection(replay_run):
     assert "strongest possible match" not in reasons
     assert "100 分" not in reasons
     assert "最强匹配" not in reasons
-
-
-def test_interview_preview_uses_completed_dossier(replay_run, client):
-    _run_id, status = replay_run
-    chen = next(c for c in status["candidates"] if c["candidate_name"] == "陈浩")
-
-    response = client.get(f"/api/candidates/{chen['candidate_id']}/interview/preview")
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["candidate_name"] == "陈浩"
-    assert payload["source"] == "deterministic_dossier_preview"
-    assert payload["opening_question"]
-    assert any(area == "推荐=hold" for area in payload["focus_areas"])
-
-
-def test_interview_preview_missing_candidate_is_404(client):
-    response = client.get("/api/candidates/none/interview/preview")
-    assert response.status_code == 404
-    assert response.json()["error"]["code"] == "candidate_not_found"

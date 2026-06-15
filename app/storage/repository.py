@@ -2,13 +2,19 @@ from __future__ import annotations
 
 import json
 import re
+import sqlite3
 from datetime import UTC, datetime
 
 from app.models.contracts import (
+    CandidateNote,
     CandidateRunResult,
     DecisionDossier,
     DocumentSummary,
+    EvidenceContextLine,
+    EvidenceSpan,
+    HumanOverride,
     NeedsReviewDossier,
+    Recommendation,
     RunMetrics,
     RunSummary,
     ValidationSummary,
@@ -16,6 +22,8 @@ from app.models.contracts import (
 from app.models.events import DecisionEvent
 from app.models.export import EvalResultSummary
 from app.storage.db import connect
+from app.workflows import interview_script as script_lib
+from app.workflows.evidence import number_lines
 
 
 def _now() -> str:
@@ -51,6 +59,10 @@ def get_run(run_id: str) -> RunSummary | None:
         row = conn.execute("SELECT * FROM runs WHERE run_id = ?", (run_id,)).fetchone()
     if not row:
         return None
+    return _row_to_run_summary(row)
+
+
+def _row_to_run_summary(row: sqlite3.Row) -> RunSummary:
     metrics = RunMetrics(**json.loads(row["metrics_json"])) if row["metrics_json"] else None
     return RunSummary(
         run_id=row["run_id"],
@@ -62,6 +74,56 @@ def get_run(run_id: str) -> RunSummary | None:
         error=row["error"],
         metrics=metrics,
     )
+
+
+def list_runs(limit: int = 30) -> list[dict]:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT
+                r.*,
+                (
+                    SELECT filename FROM documents
+                    WHERE run_id = r.run_id AND source_type = 'jd'
+                    LIMIT 1
+                ) AS jd_filename,
+                (
+                    SELECT COUNT(*) FROM documents
+                    WHERE run_id = r.run_id AND source_type = 'resume'
+                ) AS resume_count,
+                (
+                    SELECT COUNT(*) FROM candidate_results
+                    WHERE run_id = r.run_id
+                ) AS candidate_count,
+                (
+                    SELECT candidate_name FROM candidate_results
+                    WHERE run_id = r.run_id AND sort_score >= 0
+                    ORDER BY sort_score DESC
+                    LIMIT 1
+                ) AS top_candidate_name,
+                (
+                    SELECT sort_score FROM candidate_results
+                    WHERE run_id = r.run_id AND sort_score >= 0
+                    ORDER BY sort_score DESC
+                    LIMIT 1
+                ) AS top_score
+            FROM runs r
+            ORDER BY r.created_at DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+    return [
+        {
+            "run": _row_to_run_summary(row),
+            "jd_filename": row["jd_filename"],
+            "resume_count": row["resume_count"],
+            "candidate_count": row["candidate_count"],
+            "top_candidate_name": row["top_candidate_name"],
+            "top_score": row["top_score"],
+        }
+        for row in rows
+    ]
 
 
 def mark_run_started(run_id: str) -> None:
@@ -95,8 +157,9 @@ def add_document(doc: dict) -> None:
     with connect() as conn:
         conn.execute(
             "INSERT INTO documents (document_id, run_id, source_type, filename, slug,"
-            " parse_status, document_hash, char_count, raw_text, page_texts_json, created_at)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " parse_status, document_hash, char_count, raw_text, page_texts_json,"
+            " source_bytes, created_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 doc["document_id"],
                 doc["run_id"],
@@ -108,7 +171,47 @@ def add_document(doc: dict) -> None:
                 doc.get("char_count", 0),
                 doc.get("text", ""),
                 json.dumps(doc.get("page_texts", [])),
+                doc.get("source_bytes"),
                 _now(),
+            ),
+        )
+
+
+def has_pending_documents(run_id: str) -> bool:
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT 1 FROM documents WHERE run_id = ? AND parse_status = 'pending_ingest'"
+            " LIMIT 1",
+            (run_id,),
+        ).fetchone()
+    return row is not None
+
+
+def get_document_source_bytes(document_id: str) -> bytes | None:
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT source_bytes FROM documents WHERE document_id = ?",
+            (document_id,),
+        ).fetchone()
+    if row is None or row["source_bytes"] is None:
+        return None
+    return bytes(row["source_bytes"])
+
+
+def finalize_document(document_id: str, parsed: dict) -> None:
+    with connect() as conn:
+        conn.execute(
+            "UPDATE documents SET slug = ?, parse_status = ?, document_hash = ?,"
+            " char_count = ?, raw_text = ?, page_texts_json = ?, source_bytes = NULL"
+            " WHERE document_id = ?",
+            (
+                parsed["slug"],
+                parsed["parse_status"],
+                parsed.get("document_hash"),
+                parsed.get("char_count", 0),
+                parsed.get("text", ""),
+                json.dumps(parsed.get("page_texts", [])),
+                document_id,
             ),
         )
 
@@ -182,6 +285,29 @@ def save_candidate_result(run_id: str, result: CandidateRunResult) -> None:
         )
 
 
+def _override_from_row(row) -> HumanOverride | None:
+    keys = row.keys()
+    if "override_recommendation" not in keys or not row["override_recommendation"]:
+        return None
+    return HumanOverride(
+        recommendation=row["override_recommendation"],
+        rationale=row["override_rationale"] or "",
+        actor=row["override_actor"] or "human",
+        at=_parse_dt(row["override_at"]) or datetime.now(UTC),
+    )
+
+
+def _enrich_summary(result: CandidateRunResult) -> CandidateRunResult:
+    """Populate board-summary fields (§6.3) for completed candidates."""
+    if isinstance(result.dossier, DecisionDossier):
+        dossier = result.dossier
+        result.decision_summary = script_lib.decision_summary(dossier)
+        result.risk_count = len(dossier.score.risk_flags)
+        result.verification_count = script_lib.verification_count(dossier)
+        result.confidence_band = script_lib.confidence_band(dossier.score.confidence)
+    return result
+
+
 def _row_to_result(row) -> CandidateRunResult:
     dossier = None
     if row["dossier_json"]:
@@ -190,13 +316,47 @@ def _row_to_result(row) -> CandidateRunResult:
             dossier = DecisionDossier.model_validate(payload)
         else:
             dossier = NeedsReviewDossier.model_validate(payload)
-    return CandidateRunResult(
+    result = CandidateRunResult(
         candidate_id=row["candidate_id"],
         candidate_name=row["candidate_name"],
         status=row["status"],
         dossier=dossier,
         errors=json.loads(row["errors_json"]),
+        human_override=_override_from_row(row),
     )
+    return _enrich_summary(result)
+
+
+def _context_lines_for_span(span: EvidenceSpan, doc: dict) -> list[EvidenceContextLine]:
+    if span.line_no is None:
+        return []
+    numbered = number_lines(doc.get("text", ""))
+    return [
+        EvidenceContextLine(line_no=n, text=line[:2000], is_focus=n == span.line_no)
+        for n, line, _start in numbered
+        if abs(n - span.line_no) <= 1
+    ]
+
+
+def _iter_evidence_spans(result: CandidateRunResult):
+    dossier = result.dossier
+    if not isinstance(dossier, DecisionDossier):
+        return
+    yield from dossier.score.evidence_refs
+    for claim in dossier.score.claim_verifications:
+        yield from claim.evidence_refs
+    for follow_up in dossier.follow_ups:
+        yield from follow_up.evidence_refs
+
+
+def _enrich_evidence_context(result: CandidateRunResult, documents_by_id: dict[str, dict]) -> None:
+    for span in _iter_evidence_spans(result) or []:
+        if span.context_lines:
+            continue
+        doc = documents_by_id.get(span.document_id)
+        if doc is None:
+            continue
+        span.context_lines = _context_lines_for_span(span, doc)
 
 
 def get_candidate_results(run_id: str) -> list[CandidateRunResult]:
@@ -205,7 +365,11 @@ def get_candidate_results(run_id: str) -> list[CandidateRunResult]:
             "SELECT * FROM candidate_results WHERE run_id = ? ORDER BY sort_score DESC",
             (run_id,),
         ).fetchall()
-    return [_row_to_result(r) for r in rows]
+    documents_by_id = {doc["document_id"]: doc for doc in get_documents(run_id)}
+    results = [_row_to_result(r) for r in rows]
+    for result in results:
+        _enrich_evidence_context(result, documents_by_id)
+    return results
 
 
 def get_candidate(candidate_id: str) -> tuple[str, CandidateRunResult] | None:
@@ -215,7 +379,79 @@ def get_candidate(candidate_id: str) -> tuple[str, CandidateRunResult] | None:
         ).fetchone()
     if not row:
         return None
-    return row["run_id"], _row_to_result(row)
+    result = _row_to_result(row)
+    documents_by_id = {doc["document_id"]: doc for doc in get_documents(row["run_id"])}
+    _enrich_evidence_context(result, documents_by_id)
+    return row["run_id"], result
+
+
+def set_candidate_override(
+    candidate_id: str,
+    recommendation: Recommendation,
+    rationale: str,
+    actor: str = "human",
+) -> HumanOverride:
+    override = HumanOverride(
+        recommendation=recommendation,
+        rationale=rationale,
+        actor=actor,
+        at=datetime.now(UTC),
+    )
+    with connect() as conn:
+        conn.execute(
+            "UPDATE candidate_results SET override_recommendation = ?,"
+            " override_rationale = ?, override_actor = ?, override_at = ?"
+            " WHERE candidate_id = ?",
+            (
+                override.recommendation,
+                override.rationale,
+                override.actor,
+                override.at.isoformat(),
+                candidate_id,
+            ),
+        )
+    return override
+
+
+# ---- candidate notes -------------------------------------------------------------
+
+
+def add_note(candidate_id: str, run_id: str, body: str, author: str) -> CandidateNote:
+    created_at = _now()
+    with connect() as conn:
+        cursor = conn.execute(
+            "INSERT INTO candidate_notes (candidate_id, run_id, body, author, created_at)"
+            " VALUES (?, ?, ?, ?, ?)",
+            (candidate_id, run_id, body, author, created_at),
+        )
+        note_id = cursor.lastrowid
+    return CandidateNote(
+        id=note_id,
+        candidate_id=candidate_id,
+        run_id=run_id,
+        body=body,
+        author=author,
+        created_at=_parse_dt(created_at),
+    )
+
+
+def get_notes(candidate_id: str) -> list[CandidateNote]:
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM candidate_notes WHERE candidate_id = ? ORDER BY id",
+            (candidate_id,),
+        ).fetchall()
+    return [
+        CandidateNote(
+            id=r["id"],
+            candidate_id=r["candidate_id"],
+            run_id=r["run_id"],
+            body=r["body"],
+            author=r["author"],
+            created_at=_parse_dt(r["created_at"]),
+        )
+        for r in rows
+    ]
 
 
 # ---- decision events ---------------------------------------------------------------

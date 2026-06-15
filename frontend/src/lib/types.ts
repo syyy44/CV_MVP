@@ -2,6 +2,7 @@
 // Kept intentionally close to the Pydantic shapes so the API response maps 1:1.
 
 export type ParseStatus =
+  | "pending_ingest"
   | "parsed"
   | "unsupported_file_type"
   | "parse_failed"
@@ -18,6 +19,12 @@ export type Difficulty = "junior" | "mid" | "senior" | "expert";
 export type OffsetStatus = "verified" | "approximate" | "unavailable";
 export type ValidationStatus = "valid" | "repaired" | "failed";
 
+export interface EvidenceContextLine {
+  line_no: number;
+  text: string;
+  is_focus: boolean;
+}
+
 export interface EvidenceSpan {
   document_id: string;
   document_hash: string;
@@ -30,6 +37,7 @@ export interface EvidenceSpan {
   char_end?: number | null;
   offset_status: OffsetStatus;
   requirement_id?: string | null;
+  context_lines?: EvidenceContextLine[];
 }
 
 export interface CandidateSubScores {
@@ -41,6 +49,68 @@ export interface CandidateSubScores {
   communication_clarity: number;
 }
 
+export type ConfidenceBand = "high" | "medium" | "low";
+
+export interface RequirementResult {
+  requirement_id: string;
+  display_label: string;
+  kind: "must_have";
+  met: boolean;
+  weight: number;
+}
+
+export type ClaimCredibility =
+  | "well_supported"
+  | "plausible"
+  | "needs_probing"
+  | "suspicious";
+
+export interface ClaimVerification {
+  claim: string;
+  credibility: ClaimCredibility;
+  reason: string;
+  verification_hint: string;
+  evidence_refs: EvidenceSpan[];
+}
+
+export type ScoreDimensionKey = keyof CandidateSubScores;
+
+export type ScoreBand = "strong" | "adequate" | "weak" | "absent";
+
+export interface ScoreDimensionExplanation {
+  key: ScoreDimensionKey;
+  score: number;
+  band: ScoreBand;
+  weight: number;
+  weighted_points: number;
+  rationale: string;
+}
+
+export interface ScorePenaltyExplanation {
+  kind: string;
+  points: number;
+  explanation: string;
+  requirement_id?: string | null;
+}
+
+export interface ScoreBreakdownExplanation {
+  base_score: number;
+  penalties: ScorePenaltyExplanation[];
+  capped_by_deal_breaker: boolean;
+  final_score: number;
+  recommendation_rule: string;
+}
+
+export interface ScoreExplanation {
+  verdict_summary?: string;
+  fit_reasons?: string[];
+  gap_reasons?: string[];
+  verification_priorities?: string[];
+  confidence_rationale?: string;
+  dimensions?: ScoreDimensionExplanation[];
+  breakdown?: ScoreBreakdownExplanation | null;
+}
+
 export interface CandidateScore {
   overall_score: number;
   recommendation: Recommendation;
@@ -49,6 +119,10 @@ export interface CandidateScore {
   match_reasons: string[];
   risk_flags: string[];
   evidence_refs: EvidenceSpan[];
+  requirement_results: RequirementResult[];
+  claim_verifications: ClaimVerification[];
+  score_explanation?: ScoreExplanation;
+  injection_detected: boolean;
 }
 
 export interface WorkExperience {
@@ -61,7 +135,21 @@ export interface WorkExperience {
 export interface ProjectItem {
   name: string;
   description: string;
+  source_work_experience?: string;
   technologies: string[];
+  role_in_project?: string;
+  quantified_claims?: string[];
+  tech_decisions?: string[];
+}
+
+export interface EducationItem {
+  school: string;
+  degree?: string;
+  major?: string;
+  start_date?: string;
+  end_date?: string;
+  gpa?: string | null;
+  highlights?: string[];
 }
 
 export interface CandidateProfile {
@@ -70,16 +158,27 @@ export interface CandidateProfile {
   skills: string[];
   work_experiences: WorkExperience[];
   projects: ProjectItem[];
-  education: string[];
+  education: EducationItem[];
   certifications: string[];
   evidence_spans: EvidenceSpan[];
   missing_or_ambiguous_claims: string[];
 }
 
+export type QuestionArchetype =
+  | "experience_probe"
+  | "metric_validation"
+  | "depth_probe"
+  | "failure_review"
+  | "scenario_design"
+  | "jd_fit";
+
 export interface InterviewQuestion {
   question: string;
+  archetype: QuestionArchetype;
+  target_claim: string;
   competency: string;
   difficulty: Difficulty;
+  follow_up_probes: string[];
   scoring_criteria: string[];
   good_answer_signals: string[];
   red_flags: string[];
@@ -129,12 +228,74 @@ export interface NeedsReviewDossier {
 
 export type Dossier = DecisionDossier | NeedsReviewDossier;
 
+export interface HumanOverride {
+  recommendation: Recommendation;
+  rationale: string;
+  actor: string;
+  at: string;
+}
+
+export interface CandidateNote {
+  id?: number | null;
+  candidate_id: string;
+  run_id: string;
+  body: string;
+  author: string;
+  created_at: string;
+}
+
 export interface CandidateRunResult {
   candidate_id: string;
   candidate_name?: string | null;
   status: "completed" | "needs_review" | "failed";
   dossier?: Dossier | null;
   errors: string[];
+  decision_summary?: string | null;
+  risk_count: number;
+  verification_count: number;
+  confidence_band?: ConfidenceBand | null;
+  human_override?: HumanOverride | null;
+}
+
+export type SelectionReason =
+  | "claim_probe"
+  | "must_have_gap"
+  | "dimension_gap"
+  | "scenario_coverage"
+  | "difficulty_fill";
+export type VerificationReason =
+  | "injection"
+  | "claim_probe"
+  | "must_have_gap"
+  | "follow_up";
+
+export interface ScriptQuestion {
+  index: number;
+  question: InterviewQuestion;
+  suggested_minutes: number;
+  selection_reason?: SelectionReason | null;
+}
+
+export interface VerificationItem {
+  item: string;
+  reason: VerificationReason;
+  evidence_refs: EvidenceSpan[];
+}
+
+export interface InterviewScriptResponse {
+  candidate_id: string;
+  candidate_name: string;
+  recommendation: Recommendation;
+  overall_score: number;
+  confidence: number;
+  confidence_band: ConfidenceBand;
+  script_rule_version: "v3";
+  suggested_duration_min: number;
+  must_ask: ScriptQuestion[];
+  follow_ups: FollowUpQuestion[];
+  optional: ScriptQuestion[];
+  verification_checklist: VerificationItem[];
+  pass_criteria: string;
 }
 
 export interface RunMetrics {
@@ -173,10 +334,29 @@ export interface RunStatusResponse {
   documents: DocumentSummary[];
 }
 
+export interface RunListItem {
+  run: RunSummary;
+  jd_filename?: string | null;
+  resume_count: number;
+  candidate_count: number;
+  top_candidate_name?: string | null;
+  top_score?: number | null;
+}
+
 export interface RunCreateResponse {
   run_id: string;
   status: string;
   existing: boolean;
+}
+
+export interface TestDataFile {
+  filename: string;
+  url: string;
+}
+
+export interface TestDataManifest {
+  jd: TestDataFile;
+  resumes: TestDataFile[];
 }
 
 export interface HealthResponse {
@@ -187,18 +367,10 @@ export interface HealthResponse {
   langfuse_verified: boolean;
 }
 
-export interface InterviewPreviewResponse {
-  candidate_id: string;
-  candidate_name: string;
-  interviewer_persona: string;
-  opening_question: string;
-  focus_areas: string[];
-  source: string;
-}
-
 export type DecisionEventType =
   | "document_parsed"
   | "rubric_extracted"
+  | "candidate_started"
   | "llm_call_started"
   | "candidate_profile_extracted"
   | "schema_validation_failed"
@@ -209,7 +381,8 @@ export type DecisionEventType =
   | "recommendation_derived"
   | "questions_generated"
   | "dossier_completed"
-  | "human_override_recorded";
+  | "human_override_recorded"
+  | "note_added";
 
 export interface DecisionEvent {
   id?: number | null;
@@ -283,4 +456,88 @@ export interface ApiErrorDetail {
 
 export function isCompletedDossier(d: Dossier | null | undefined): d is DecisionDossier {
   return d?.status === "completed";
+}
+
+// ---- 1v1 comparison (compare.v1) -------------------------------------------
+
+export type CompareMargin = "decisive" | "clear" | "slight" | "even";
+export type ComparePick = "a" | "b" | "either" | "neither";
+export type CompareConfidence = "clear" | "leaning" | "too_close";
+export type CompareWinner = "a" | "b" | "tie";
+export type CompareSideRef = "a" | "b";
+
+export interface CompareSide {
+  candidate_id: string;
+  candidate_name: string;
+  overall_score_ref: number;
+  recommendation_ref: Recommendation;
+  confidence_ref: number;
+}
+
+export interface DimensionComparison {
+  key: ScoreDimensionKey;
+  label: string;
+  weight: number;
+  a_score_ref: number;
+  b_score_ref: number;
+  a_band: ScoreBand;
+  b_band: ScoreBand;
+  winner: CompareWinner;
+  margin: CompareMargin;
+  rationale: string;
+  a_basis: string;
+  b_basis: string;
+}
+
+export interface MustHaveFaceOff {
+  requirement_id: string;
+  display_label: string;
+  a_met: boolean;
+  b_met: boolean;
+}
+
+export interface CompareDifferentiator {
+  favors: CompareSideRef;
+  dimension?: ScoreDimensionKey | null;
+  text: string;
+}
+
+export interface ScenarioFit {
+  prefer: CompareSideRef;
+  when: string;
+}
+
+export interface VerificationFocus {
+  item: string;
+  why_it_matters: string;
+  could_flip: boolean;
+}
+
+export interface CompareVerdict {
+  pick: ComparePick;
+  confidence: CompareConfidence;
+  headline: string;
+  rationale: string;
+  tie_breaker: string;
+  would_change_if: string;
+  overridden_by_rule: string;
+}
+
+export interface CandidateComparison {
+  schema_version: "compare.v1";
+  run_id: string;
+  role_title: string;
+  generated_with: "llm" | "deterministic";
+  a: CompareSide;
+  b: CompareSide;
+  verdict: CompareVerdict;
+  differentiators: CompareDifferentiator[];
+  dimensions: DimensionComparison[];
+  must_haves: MustHaveFaceOff[];
+  a_unique_strengths: string[];
+  b_unique_strengths: string[];
+  a_risks: string[];
+  b_risks: string[];
+  scenario_fit: ScenarioFit[];
+  verification_focus: VerificationFocus[];
 }

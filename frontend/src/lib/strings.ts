@@ -2,13 +2,20 @@
 // Icons are intentionally NOT embedded here (emoji-free UI); semantic SVG icons
 // are rendered by components instead.
 
-import type { Difficulty, Recommendation, RunStatus } from "@/lib/types";
+import type {
+  ClaimCredibility,
+  Difficulty,
+  QuestionArchetype,
+  Recommendation,
+  RunStatus,
+} from "@/lib/types";
 
 export const PAGE_TITLE = "智能招聘助手";
 export const APP_TITLE = "智能招聘助手";
-export const MAIN_TITLE = "候选人决策档案";
+export const APP_TAGLINE = "筛选 · 排名 · 面试准备";
+export const MAIN_TITLE = "候选人筛选与面试准备";
 export const MAIN_CAPTION =
-  "证据驱动的筛选：每项评分均有原文引用支撑，经过 schema 校验、有界修复，并生成可导出的决策台账。";
+  "上传 JD 与简历，几分钟拿到排名和可直接带进会议室的面试脚本。每条结论都附简历原文。";
 
 export const RECOMMENDATION_LABELS: Record<Recommendation, string> = {
   proceed: "通过",
@@ -23,6 +30,23 @@ export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   expert: "专家",
 };
 
+// 深度面试题型（v7 prompt 方法论：经历真/知识真懂/真会解决问题/JD 匹配）。
+export const ARCHETYPE_LABELS: Record<QuestionArchetype, string> = {
+  experience_probe: "经历复原",
+  metric_validation: "口径核查",
+  depth_probe: "技术深挖",
+  failure_review: "失败复盘",
+  scenario_design: "场景设计",
+  jd_fit: "岗位迁移",
+};
+
+export const CLAIM_CREDIBILITY_LABELS: Record<ClaimCredibility, string> = {
+  well_supported: "证据充分",
+  plausible: "基本可信",
+  needs_probing: "需追问口径",
+  suspicious: "存疑",
+};
+
 export const RUN_STATUS_LABELS: Record<RunStatus, string> = {
   queued: "排队中",
   running: "运行中",
@@ -31,31 +55,36 @@ export const RUN_STATUS_LABELS: Record<RunStatus, string> = {
   failed: "失败",
 };
 
-export const VALIDATION_STATUS_LABELS: Record<string, string> = {
-  valid: "有效",
-  repaired: "已修复",
-  failed: "失败",
-};
-
 export const S = {
   apiUnreachable: (url: string) =>
     `无法连接 API（${url}），请先运行 make demo 启动服务。`,
   replayMode: "回放模式 — 使用内置演示数据，无需 LLM 密钥。",
   liveMode: "实时模式 — OpenAI 兼容端点（默认 Qwen qwen-plus）。",
-  langfuseEnabled: "已启用",
-  langfuseFallback: "本地回退（决策台账 + 日志）",
-  langfuseCaption: (label: string) => `Langfuse：${label}`,
 
   sidebarDemoHeader: "一键演示",
   loadDemoButton: "加载演示案例",
   loadDemoHelp: "一份 JD + 三份合成简历：强匹配、弱匹配、prompt 注入尝试。",
 
   sidebarLiveHeader: "实时筛选（你的文件）",
+  loadTestDataButton: "加载测试简历",
+  loadTestDataHelp: "从 data/test 一键填入 JD 与本地测试简历。",
+  runTestLiveButton: "一键实时测试",
   jdUploader: "职位描述（PDF / DOCX / TXT）",
+  jdUploadTab: "上传文件",
+  jdPasteTab: "粘贴文字",
+  jdPastePlaceholder: "将职位描述粘贴到此处…",
   resumeUploader: "简历（1-5 份，每份最大 5MB）",
   runLiveButton: "开始实时筛选",
   uploadContract:
     "上传约定：1 份 JD + 最多 5 份简历，PDF/DOCX/TXT，每份 5MB。文件保存在本地 SQLite；原始文本不会进入审计导出。",
+
+  historyHeader: "历史记录",
+  historyCaption: "本地 SQLite 中保存的筛选运行，点击可重新打开排名与面试脚本。",
+  historyEmpty: "暂无历史记录。完成一次演示或实时筛选后会显示在这里。",
+  historyOpen: "打开",
+  historyJdUnknown: "（未命名 JD）",
+  historyResumeCount: (count: number) => `${count} 份简历`,
+  historyTopCandidate: (name: string, score: number) => `${name} · ${score} 分`,
 
   emptyRun: "点击「加载演示案例」体验一键演示，或上传 JD 与简历进行实时筛选。",
 
@@ -63,6 +92,7 @@ export const S = {
   runBadgeLive: "实时",
 
   progressQueued: "任务已提交，等待后台启动…",
+  progressParsingDocs: "正在解析上传文档…",
   progressRubric: "正在从职位描述提取评分标准…",
   progressLlmWait: (step: string) =>
     `正在调用 LLM：${step}（通常需 30 秒–4 分钟）`,
@@ -76,7 +106,7 @@ export const S = {
   progressLastEvent: (seconds: number) => `最新事件 ${seconds} 秒前`,
   progressLlmIdle:
     "LLM 仍在响应中，请稍候（长简历或网络较慢时可能等待数分钟）",
-  progressAutoRefresh: "每 2 秒自动刷新",
+  progressAutoRefresh: "每 1 秒自动刷新",
   progressCandidatesHeader: "候选人进度",
   progressActivityHeader: "实时活动",
   progressStatusLabel: "运行中",
@@ -92,23 +122,128 @@ export const S = {
   runFailed: (detail: string) => `运行失败：${detail}`,
   unknownError: "未知错误",
 
-  tabRanking: "排名",
-  tabDossier: "档案",
-  tabObservability: "可观测性",
-  tabAudit: "审计导出",
+  tabBoard: "候选看板",
+  tabPrep: "面试准备",
+
+  boardHeader: (n: number) => `本次筛选 · ${n} 名候选人`,
+  boardCaption: "按匹配分数排序。用右侧按钮进入面试准备。",
+  boardRiskCount: (n: number) => `${n} 风险`,
+  boardVerifyCount: (n: number) => `${n} 待核实`,
+  chipAll: "全部",
+  showReason: "查看原因",
+  hideReason: "收起",
+
+  compareTitle: "对比",
+  compareSelected: (n: number) => `已选 ${n} 人`,
+  compareOpen: "进入对比",
+  compareClose: "关闭",
+  compareRiskRow: "风险",
+  compareVerifyRow: "待核实",
+  compareNoRisk: "—",
+
+  prepTabScript: "面试脚本",
+  prepTabScore: "评分依据",
+  prepTabProfile: "候选人画像",
+  copyScript: "复制脚本",
+  scriptCopied: "已复制",
+  scriptCopiedToast: "面试脚本已复制，可粘贴到笔记或飞书文档。",
+  scriptMustAsk: "必问",
+  scriptFollowUps: (n: number) => `模糊点追问（${n} 条）`,
+  scriptOptional: (n: number) => `选问（${n} 题，时间充裕再问）`,
+  scriptMinutes: (n: number) => `${n} 分钟`,
+  scriptKeyPoints: "要点：",
+  scriptDurationHint: (min: number, must: number, follow: number) =>
+    `建议面试约 ${min} 分钟 · 必问 ${must} 题 · 追问 ${follow} 条`,
+
+  holdWhyTitle: "为什么待定",
+  holdVerifyTitle: (n: number) => `通过前建议核实（${n} 条）`,
+
+  scriptLoading: "正在生成面试脚本…",
+  scriptError: "面试脚本加载失败，请稍后重试。",
+
+  // 必备要求覆盖（UX-014：用 display_label，不暴露 MH 编号）。
+  requirementCoverageTitle: "必备要求覆盖",
+  requirementCoverageHint: "点击任一必备项展开 JD 要求、简历引用与判断原因",
+  reqMet: "满足",
+  reqUnmet: "未满足",
+
+  // 面后笔记（P2）。
+  notesTitle: "面后笔记",
+  notesEmpty: "还没有笔记。面试后可在此记录结论与依据。",
+  notesPlaceholder: "记录面试中的关键回答、印象与结论…",
+  notesAdd: "添加笔记",
+  notesAdding: "保存中…",
+  notesAuthorDefault: "面试官",
+  notesAt: (time: string) => time,
+
+  // 人工改推荐（P2）。
+  overrideBadge: "已改判",
+  changeDecisionTitle: "调整推荐结论",
+  changeDecisionHint: "面试后如需修改推荐，将记录到决策台账（原始模型结论保留）。",
+  decisionCurrent: (label: string) => `当前推荐：${label}`,
+  decisionModelRec: (label: string) => `模型原始推荐：${label}`,
+  decisionRationalePlaceholder: "改判依据（必填）…",
+  decisionSavedRationaleTitle: "已记录的改判依据",
+  decisionOverrideMeta: (actor: string, time: string) => `${actor} · ${time}`,
+  decisionSubmit: "记录改判",
+  decisionSubmitting: "记录中…",
+  decisionRecordedToast: "推荐结论已更新并写入决策台账。",
+  overrideBy: (actor: string, label: string) => `${actor} 已改判为「${label}」`,
+
+  recommendationShort: (rec: Recommendation) => RECOMMENDATION_LABELS[rec],
+  confidenceBandLabel: (band: "high" | "medium" | "low") =>
+    band === "high" ? "置信：高" : band === "medium" ? "置信：中" : "置信：低",
+  // Hover copy per docs/V2_UI_PROPOSAL.md §5.2.
+  confidenceHover: (band: "high" | "medium" | "low") =>
+    band === "high"
+      ? "各维度评分一致、证据充分，可直接安排面试。"
+      : band === "medium"
+        ? "部分维度证据偏弱或有待核实点，建议先看追问再定。"
+        : "评分冲突或证据不足，建议 hold 或缩短面试以核实为主。",
+  scoreExplanationShort: "分数由多项维度综合得出；下方可查看评分依据与原文引用。",
 
   noCandidates: "本次运行没有候选人。",
   noDossiers: "本次运行没有可用档案。",
   needsReview: (message: string) => `需要人工复核：${message}`,
   validationFailedDefault: "校验失败",
-  needsReviewBadge: "待复核",
+  needsReviewBadge: "需复核",
   failedBadge: "失败",
 
   scoreLabel: "匹配分数",
   recommendationLabel: "推荐结论",
-  confidenceLabel: "模型置信度",
+  confidenceLabel: "评分置信度",
   scoreExplanation:
     "总分由校验后的子分项确定性计算；模型仅提供证据与分析。",
+  scoreDecisionSummary: "决策摘要",
+  scorePrimaryReasons: "关键原因",
+  scorePositiveSignals: "匹配亮点",
+  scoreMustVerify: "必须核查",
+  scoreRulesTitle: "评分规则",
+  scoreRulesCopy:
+    "最终分数由固定权重与扣分规则计算；同一份结构化分析会得到相同总分。LLM 只负责抽取证据和逐维度判断。",
+  scoreThresholdCopy:
+    "通过：≥75 且置信≥0.70；拒绝：<60、置信<0.50 或命中一票否决；其余待定。",
+  scoreFormulaTitle: "分数构成",
+  scoreFormulaCopy:
+    "基础分 = 六个维度按权重加权；缺失必备项扣 8-15 分，重大无支撑声明每条扣 5 分，一票否决封顶 59。",
+  scoreBandStrong: "强匹配",
+  scoreBandAdequate: "可接受",
+  scoreBandWeak: "弱匹配",
+  scoreBandAbsent: "缺失",
+  scoreConclusionTitle: "核心结论",
+  scoreStrengths: "核心优势",
+  scoreConcerns: "短板与风险",
+  scoreInterviewFocus: "面试追问重点",
+  scoreDimensionRationaleShow: "展开各维度评分依据",
+  scoreDimensionRationaleHide: "收起各维度评分依据",
+  scoreClaimDetailToggle: (n: number) => `完整声明核查（${n} 条）`,
+  scoreEvidenceToggle: (n: number) => `必备项覆盖与证据台账（${n} 条引用）`,
+  scoreFinalLabel: "最终分",
+  scoreBaseLabel: "加权基础分",
+  scorePenaltyLabel: "扣分",
+  scoreNoStrengths: "暂无足够明确的匹配亮点。",
+  scoreNoConcerns: "未发现明确阻断项。",
+  scoreNoVerify: "没有额外的高优先级核查项。",
   whyThisScore: "评分理由",
   subScoreHeader: "维度得分",
   evidenceLedger: (n: number) => `证据台账（${n} 条引用）`,
@@ -119,6 +254,8 @@ export const S = {
   profileHeader: "候选人画像",
   profileSummary: "概述",
   profileSkills: "技能",
+  profileSkillsJdRelevant: "JD 相关技能",
+  profileSkillsOther: (n: number) => `其他技能（${n}）`,
   profileExperience: "工作经历",
   profileProjects: "项目",
   profileEducation: "教育",
@@ -132,59 +269,26 @@ export const S = {
   ambiguityLabel: "模糊点：",
   listenFor: "关注信号：",
 
-  interviewPreviewTitle: "场景 B 预览（轻量）",
-  interviewPreviewCaption:
-    "非完整多轮面试官；这是基于已完成候选人决策档案的文档化扩展路径。",
-  personaLabel: "面试官人设：",
-  openingLabel: "开场问题：",
-  focusLabel: "关注重点：",
-  previewUnavailable: (detail: string) => `面试预览不可用：${detail}`,
+  // 深度面试题（v7）。
+  targetClaimLabel: "针对简历声明：",
+  probeChainLabel: (n: number) => `递进追问（${n} 条，答得越顺越往深问）`,
+  authenticSignals: "真做过的信号：",
+  recitedSignals: "背诵/包装信号：",
+
+  // 声明核查（评分依据页）。
+  claimVerificationTitle: (n: number) => `简历声明核查（${n} 条）`,
+  claimVerificationCaption:
+    "简历是「声明的集合」而非「事实的集合」：以下关键声明的可信度评级与面试验证方式。",
+  claimHowToVerify: "面试验证：",
+
+  // 候选人画像：项目深挖锚点。
+  profileProjectExperienceLabel: "归属经历：",
+  profileProjectCount: (n: number) => `${n} 个项目`,
+  profileRoleLabel: "职责边界：",
+  profileClaimsLabel: "量化声明",
+  profileTechDecisionsLabel: "技术选型",
 
   candidateSelect: "候选人",
-
-  obsLlmCalls: "LLM 调用",
-  obsInputTokens: "输入 token",
-  obsOutputTokens: "输出 token",
-  obsCost: "费用估算（USD）",
-  obsDuration: "耗时（秒）",
-  obsReplayNote: "回放模式不调用实时模型，因此 token 为 0。",
-  decisionLedger: (n: number) => `决策台账（${n} 条事件）`,
-  evalResults: "最新评测结果（make eval）",
-  noEvalResults: "尚无评测结果 — 运行 make eval 填充本面板。",
-
-  ledgerColTs: "时间",
-  ledgerColEvent: "事件",
-  ledgerColCandidate: "候选人",
-  ledgerColNode: "节点",
-  ledgerColActor: "执行方",
-  ledgerColModel: "模型",
-  ledgerColPrompt: "Prompt",
-  ledgerColLatency: "延迟(ms)",
-  ledgerColValidation: "校验",
-
-  evalColCheck: "检查项",
-  evalColStatus: "状态",
-  evalColValue: "数值",
-  evalColDetails: "详情",
-
-  validationProvenance: "校验与溯源",
-  validationRow: (
-    node: string,
-    schema: string,
-    status: string,
-    repairs: number,
-  ) => `${node} · ${schema} · ${status} · 修复次数=${repairs}`,
-  langfuseTrace: "打开 Langfuse 追踪",
-  langfuseDisabled: "Langfuse 未启用 — 决策台账与本地日志为审计来源。",
-
-  exportStatus: "导出状态",
-  exportEvents: "决策事件",
-  exportDossiers: "档案",
-  exportRepairs: "修复尝试",
-  downloadAudit: "下载审计 JSON（audit-export.v1）",
-  exportUnavailable: (detail: string) => `审计导出不可用：${detail}`,
-  auditRedaction:
-    "脱敏说明：仅包含哈希、引用片段与元数据 — 原始文档文本与服务商凭证不会进入导出。",
 };
 
 export const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -192,6 +296,7 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   rubric_extracted: "职位标准已生成",
   llm_call_started: "开始 LLM 调用",
   candidate_profile_extracted: "候选人档案已提取",
+  candidate_started: "开始处理候选人",
   schema_validation_failed: "输出校验失败",
   repair_attempted: "尝试修复输出",
   repair_succeeded: "修复成功",
@@ -219,6 +324,7 @@ export const CANDIDATE_STAGE_LABELS: Record<string, string> = {
   interview: "生成面试题",
   assemble: "汇总档案",
   done: "已完成",
+  failed: "处理失败",
 };
 
 export const SUB_SCORE_LABELS: Record<string, string> = {

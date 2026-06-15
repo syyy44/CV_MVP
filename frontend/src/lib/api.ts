@@ -1,11 +1,17 @@
 import type {
   AuditExport,
+  CandidateComparison,
+  CandidateNote,
   DecisionEvent,
   EvalResultSummary,
   HealthResponse,
-  InterviewPreviewResponse,
+  HumanOverride,
+  InterviewScriptResponse,
+  Recommendation,
   RunCreateResponse,
+  RunListItem,
   RunStatusResponse,
+  TestDataManifest,
 } from "@/lib/types";
 
 export class ApiError extends Error {
@@ -45,6 +51,22 @@ async function getJson<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
+async function sendJson<T>(
+  path: string,
+  method: "POST" | "PATCH",
+  body: unknown,
+): Promise<T> {
+  const response = await fetch(path, {
+    method,
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw await parseError(response);
+  }
+  return (await response.json()) as T;
+}
+
 export const api = {
   health(): Promise<HealthResponse> {
     return getJson<HealthResponse>("/health");
@@ -54,17 +76,61 @@ export const api = {
     return getJson<RunStatusResponse>(`/api/runs/${runId}`);
   },
 
+  listRuns(limit = 30): Promise<RunListItem[]> {
+    const params = new URLSearchParams({ limit: String(limit) });
+    return getJson<RunListItem[]>(`/api/runs?${params.toString()}`);
+  },
+
   getEvents(runId: string): Promise<DecisionEvent[]> {
     return getJson<DecisionEvent[]>(`/api/runs/${runId}/events`);
+  },
+
+  getComparison(
+    runId: string,
+    aId: string,
+    bId: string,
+  ): Promise<CandidateComparison> {
+    const params = new URLSearchParams({ a: aId, b: bId });
+    return getJson<CandidateComparison>(
+      `/api/runs/${runId}/compare?${params.toString()}`,
+    );
   },
 
   getEvals(): Promise<EvalResultSummary[]> {
     return getJson<EvalResultSummary[]>("/api/evals");
   },
 
-  getInterviewPreview(candidateId: string): Promise<InterviewPreviewResponse> {
-    return getJson<InterviewPreviewResponse>(
-      `/api/candidates/${candidateId}/interview/preview`,
+  getInterviewScript(candidateId: string): Promise<InterviewScriptResponse> {
+    return getJson<InterviewScriptResponse>(
+      `/api/candidates/${candidateId}/interview-script`,
+    );
+  },
+
+  getNotes(candidateId: string): Promise<CandidateNote[]> {
+    return getJson<CandidateNote[]>(`/api/candidates/${candidateId}/notes`);
+  },
+
+  addNote(
+    candidateId: string,
+    body: string,
+    author: string,
+  ): Promise<CandidateNote> {
+    return sendJson<CandidateNote>(
+      `/api/candidates/${candidateId}/notes`,
+      "POST",
+      { body, author },
+    );
+  },
+
+  patchDecision(
+    candidateId: string,
+    recommendation: Recommendation,
+    rationale: string,
+  ): Promise<HumanOverride> {
+    return sendJson<HumanOverride>(
+      `/api/candidates/${candidateId}/decision`,
+      "PATCH",
+      { recommendation, rationale },
     );
   },
 
@@ -77,17 +143,29 @@ export const api = {
     return `/api/runs/${runId}/audit-export`;
   },
 
+  getTestDataManifest(): Promise<TestDataManifest> {
+    return getJson<TestDataManifest>("/api/test-data");
+  },
+
   async startRun(
     mode: "replay" | "live",
-    options: { jd?: File | null; resumes?: File[] } = {},
+    options: {
+      jd?: File | null;
+      jdText?: string;
+      resumes?: File[];
+      source?: "upload" | "test";
+    } = {},
   ): Promise<RunCreateResponse> {
     const form = new FormData();
     form.append("idempotency_key", crypto.randomUUID());
     if (options.jd) form.append("jd", options.jd, options.jd.name);
+    else if (options.jdText) form.append("jd_text", options.jdText);
     for (const resume of options.resumes ?? []) {
       form.append("resumes", resume, resume.name);
     }
-    const response = await fetch(`/api/runs?mode=${mode}`, {
+    const params = new URLSearchParams({ mode });
+    if (options.source) params.set("source", options.source);
+    const response = await fetch(`/api/runs?${params.toString()}`, {
       method: "POST",
       body: form,
     });

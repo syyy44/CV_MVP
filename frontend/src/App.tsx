@@ -1,55 +1,89 @@
-import { Activity, FileText, Loader2, ScrollText, Trophy } from "lucide-react";
+import { ClipboardList, Loader2, Trophy } from "lucide-react";
 import * as React from "react";
 
 import { Launcher } from "@/components/Launcher";
+import { RunHistory } from "@/components/RunHistory";
 import { TopBar } from "@/components/TopBar";
 import { Badge } from "@/components/ui/Badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { useHealth, useRun, useStartRun } from "@/hooks/queries";
 import { ApiError } from "@/lib/api";
 import { RUN_STATUS_LABELS, S } from "@/lib/strings";
-import { Audit } from "@/views/Audit";
-import { Dossier } from "@/views/Dossier";
+import { buildSearch, parseNav, type MainTab, type NavState } from "@/lib/url-state";
+import { InterviewPrep } from "@/views/InterviewPrep";
 import { LiveProgress } from "@/views/LiveProgress";
-import { Observability } from "@/views/Observability";
 import { Ranking } from "@/views/Ranking";
 
 const RUN_KEY = "ra.run_id";
 
+function initialNav(): NavState {
+  const nav = parseNav(window.location.search);
+  if (!nav.run) {
+    const stored = sessionStorage.getItem(RUN_KEY);
+    if (stored) return { ...nav, run: stored };
+  }
+  return nav;
+}
+
 export default function App() {
   const healthQuery = useHealth();
-  const [runId, setRunId] = React.useState<string | null>(
-    () => sessionStorage.getItem(RUN_KEY) || null,
-  );
-  const [selectedCandidate, setSelectedCandidate] = React.useState<string | null>(
-    null,
-  );
-  const [activeTab, setActiveTab] = React.useState("ranking");
+  const [nav, setNav] = React.useState<NavState>(initialNav);
 
-  const setRun = React.useCallback((id: string | null) => {
-    setRunId(id);
-    setSelectedCandidate(null);
-    setActiveTab("ranking");
-    if (id) sessionStorage.setItem(RUN_KEY, id);
-    else sessionStorage.removeItem(RUN_KEY);
+  const navigate = React.useCallback(
+    (next: NavState, mode: "push" | "replace" = "push") => {
+      setNav(next);
+      const url = buildSearch(next) || window.location.pathname;
+      if (mode === "push") window.history.pushState(null, "", url);
+      else window.history.replaceState(null, "", url);
+      if (next.run) sessionStorage.setItem(RUN_KEY, next.run);
+      else sessionStorage.removeItem(RUN_KEY);
+    },
+    [],
+  );
+
+  // Reflect the restored session run in the URL once on mount.
+  React.useEffect(() => {
+    const search = buildSearch(nav);
+    if (window.location.search !== search) {
+      window.history.replaceState(null, "", search || window.location.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const startRun = useStartRun((id) => setRun(id));
-  const runQuery = useRun(runId);
+  React.useEffect(() => {
+    const onPop = () => setNav(parseNav(window.location.search));
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
+  const setRun = React.useCallback(
+    (id: string | null) => navigate({ run: id, tab: "board", candidate: null }, "replace"),
+    [navigate],
+  );
+
+  const startRun = useStartRun((id) => setRun(id));
+  const runQuery = useRun(nav.run);
   const reset = React.useCallback(() => setRun(null), [setRun]);
 
-  function selectCandidate(id: string) {
-    setSelectedCandidate(id);
-    setActiveTab("dossier");
-  }
+  const selectCandidate = React.useCallback(
+    (id: string) => navigate({ run: nav.run, tab: "prep", candidate: id }),
+    [navigate, nav.run],
+  );
+
+  const changeTab = React.useCallback(
+    (tab: string) => {
+      const next: MainTab = tab === "prep" ? "prep" : "board";
+      navigate({ run: nav.run, tab: next, candidate: nav.candidate });
+    },
+    [navigate, nav.run, nav.candidate],
+  );
 
   return (
     <div className="min-h-screen">
       <TopBar
         health={healthQuery.data}
         onReset={reset}
-        showReset={Boolean(runId)}
+        showReset={Boolean(nav.run)}
       />
 
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-6">
@@ -59,12 +93,17 @@ export default function App() {
           </div>
         ) : null}
 
-        {!runId ? (
-          <Launcher
-            onStart={(input) => startRun.mutate(input)}
-            pending={startRun.isPending}
-            error={startRun.error}
-          />
+        {!nav.run ? (
+          <div className="space-y-8">
+            <Launcher
+              onStart={(input) => startRun.mutate(input)}
+              pending={startRun.isPending}
+              error={startRun.error}
+            />
+            <div className="mx-auto max-w-5xl">
+              <RunHistory onOpen={setRun} />
+            </div>
+          </div>
         ) : runQuery.isLoading ? (
           <div className="flex items-center justify-center gap-2 py-20 text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
@@ -74,12 +113,12 @@ export default function App() {
           <RunError error={runQuery.error} onReset={reset} />
         ) : runQuery.data ? (
           <RunView
-            runId={runId}
+            runId={nav.run}
             data={runQuery.data}
-            selectedCandidate={selectedCandidate}
+            selectedCandidate={nav.candidate}
             onSelectCandidate={selectCandidate}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
+            activeTab={nav.tab}
+            onTabChange={changeTab}
           />
         ) : null}
       </main>
@@ -145,8 +184,7 @@ function RunView({
         <div className="rounded-lg border border-reject/40 bg-reject/10 px-4 py-3 text-sm text-reject">
           {S.runFailed(detail)}
         </div>
-        <Observability runId={runId} run={run} />
-        <Ranking candidates={candidates} onSelect={onSelectCandidate} />
+        <Ranking candidates={candidates} onSelect={onSelectCandidate} runId={runId} />
       </div>
     );
   }
@@ -156,40 +194,26 @@ function RunView({
       <RunHeader runId={runId} mode={run.mode} status={run.status} />
       <Tabs value={activeTab} onValueChange={onTabChange}>
         <TabsList>
-          <TabsTrigger value="ranking">
+          <TabsTrigger value="board">
             <Trophy className="size-4" />
-            {S.tabRanking}
+            {S.tabBoard}
           </TabsTrigger>
-          <TabsTrigger value="dossier">
-            <FileText className="size-4" />
-            {S.tabDossier}
-          </TabsTrigger>
-          <TabsTrigger value="observability">
-            <Activity className="size-4" />
-            {S.tabObservability}
-          </TabsTrigger>
-          <TabsTrigger value="audit">
-            <ScrollText className="size-4" />
-            {S.tabAudit}
+          <TabsTrigger value="prep">
+            <ClipboardList className="size-4" />
+            {S.tabPrep}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="ranking">
-          <Ranking candidates={candidates} onSelect={onSelectCandidate} />
+        <TabsContent value="board">
+          <Ranking candidates={candidates} onSelect={onSelectCandidate} runId={runId} />
         </TabsContent>
-        <TabsContent value="dossier">
-          <Dossier
-            runId={runId}
+        <TabsContent value="prep">
+          <InterviewPrep
             candidates={candidates}
             selectedId={selectedCandidate}
             onSelect={onSelectCandidate}
+            runId={runId}
           />
-        </TabsContent>
-        <TabsContent value="observability">
-          <Observability runId={runId} run={run} />
-        </TabsContent>
-        <TabsContent value="audit">
-          <Audit runId={runId} />
         </TabsContent>
       </Tabs>
     </div>

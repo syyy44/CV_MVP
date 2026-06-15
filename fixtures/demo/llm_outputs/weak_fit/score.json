@@ -63,6 +63,11 @@
   ],
   "missing_must_haves": [
     {
+      "requirement_id": "MH2",
+      "severity_penalty": 10,
+      "explanation": "未体现 FastAPI 或同类异步 Python Web 框架生产经验。"
+    },
+    {
       "requirement_id": "MH3",
       "severity_penalty": 12,
       "explanation": "任何岗位或项目均未描述多步 LLM 工作流经验。"
@@ -85,6 +90,44 @@
       "category": "weak_evidence",
       "description": "Python 经验远低于三年专业门槛（MH1），仅有业余学习与小型脚本。",
       "evidence": []
+    }
+  ],
+  "claim_verifications": [
+    {
+      "claim": "优化结账漏斗的 Core Web Vitals 指标",
+      "credibility": "needs_probing",
+      "reason": "未给出指标名称、优化前后数值与数据来源（真实用户监控还是实验室环境），结果无法核对。",
+      "verification_hint": "追问优化的是哪个指标、从多少到多少、P75 口径与数据来源，以及最有效的三个改动。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 5
+        }
+      ]
+    },
+    {
+      "claim": "编写小型 Python 脚本批量重命名营销素材",
+      "credibility": "plausible",
+      "reason": "声明本身可信且与前端背景一致，但相对岗位的三年专业 Python 门槛仅是脚本级证据。",
+      "verification_hint": "要求复原脚本结构与异常处理，并追问端到端写过的最复杂 Python 程序。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 6
+        }
+      ]
+    },
+    {
+      "claim": "对 AI 产品感兴趣，业余时间在学习 Python",
+      "credibility": "needs_probing",
+      "reason": "学习声明无任何产出物或进度佐证，无法判断投入程度。",
+      "verification_hint": "追问本月具体学了什么、写过的代码量与可展示的练习项目。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 2
+        }
+      ]
     }
   ]
 }
