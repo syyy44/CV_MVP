@@ -3,7 +3,6 @@ from __future__ import annotations
 from app.models.contracts import EvidenceSpan
 from app.models.drafts import EvidenceSpanDraft
 from app.workflows.evidence import (
-    build_line_index,
     dedupe_spans,
     number_lines,
     render_numbered_source,
@@ -82,12 +81,6 @@ def test_resolve_drafts_separates_spans_and_problems():
     spans, problems = resolve_drafts([draft(1), draft(99)], DOCS)
     assert len(spans) == 1
     assert len(problems) == 1
-
-
-def test_build_line_index_maps_numbers_to_verbatim_lines():
-    index = build_line_index(DOCS)
-    assert index["resume"][1][0] == "Li Wei built and operated FastAPI services in production"
-    assert 99 not in index["resume"]
 
 
 def test_dedupe_spans_by_document_and_normalized_snippet():

@@ -71,44 +71,19 @@ def render_numbered_source(text: str, source_type: str) -> str:
     )
 
 
-def _line_index(text: str) -> dict[int, tuple[str, int]]:
-    return {line_no: (line, start) for line_no, line, start in number_lines(text)}
-
-
-def _context_lines(
-    numbered: list[tuple[int, str, int]], line_no: int, *, radius: int = 1
+def build_context_lines(
+    numbered: list[tuple[int, str, int]], focus_line_no: int, *, radius: int = 1
 ) -> list[EvidenceContextLine]:
+    """Build focus +/- ``radius`` context lines from an already-numbered source.
+
+    Single source of truth for the context window shown around a cited line;
+    reused by citation resolution, requirement-ref fallback, and storage enrichment.
+    """
     return [
-        EvidenceContextLine(line_no=n, text=line[:2000], is_focus=n == line_no)
+        EvidenceContextLine(line_no=n, text=line[:2000], is_focus=n == focus_line_no)
         for n, line, _start in numbered
-        if abs(n - line_no) <= radius
+        if abs(n - focus_line_no) <= radius
     ]
-
-
-def build_line_index(
-    documents_by_type: dict[str, dict],
-) -> dict[str, dict[int, tuple[str, int]]]:
-    """Map each source type to its ``{line_no: (verbatim_line, char_start)}``."""
-    return {
-        source_type: _line_index(doc.get("text", ""))
-        for source_type, doc in documents_by_type.items()
-    }
-
-
-def quotable_lines(
-    text: str,
-    *,
-    min_len: int = EVIDENCE_SNIPPET_MIN_LENGTH,
-    limit: int = 40,
-) -> list[str]:
-    """Distinct non-trivial source lines (used for diagnostics)."""
-    seen: list[str] = []
-    for _line_no, line, _start in number_lines(text, min_len=min_len):
-        if line not in seen:
-            seen.append(line)
-        if len(seen) >= limit:
-            break
-    return seen
 
 
 def resolve_draft(
@@ -138,7 +113,7 @@ def resolve_draft(
         char_end=char_start + len(verbatim),
         offset_status="verified",
         requirement_id=draft.requirement_id,
-        context_lines=_context_lines(numbered, draft.line_no),
+        context_lines=build_context_lines(numbered, draft.line_no),
     )
 
 

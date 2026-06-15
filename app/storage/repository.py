@@ -23,7 +23,7 @@ from app.models.events import DecisionEvent
 from app.models.export import EvalResultSummary
 from app.storage.db import connect
 from app.workflows import interview_script as script_lib
-from app.workflows.evidence import number_lines
+from app.workflows.evidence import build_context_lines, number_lines
 from app.workflows.grounding import relevance
 from app.workflows.requirement_refs import build_jd_evidence_refs
 
@@ -333,11 +333,7 @@ def _context_lines_for_span(span: EvidenceSpan, doc: dict) -> list[EvidenceConte
     if span.line_no is None:
         return []
     numbered = number_lines(doc.get("text", ""))
-    return [
-        EvidenceContextLine(line_no=n, text=line[:2000], is_focus=n == span.line_no)
-        for n, line, _start in numbered
-        if abs(n - span.line_no) <= 1
-    ]
+    return build_context_lines(numbered, span.line_no)
 
 
 def _iter_evidence_spans(result: CandidateRunResult):

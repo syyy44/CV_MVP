@@ -1,21 +1,8 @@
 from __future__ import annotations
 
-from app.models.contracts import EvidenceContextLine, EvidenceSpan
-from app.workflows.evidence import number_lines
+from app.models.contracts import EvidenceSpan
+from app.workflows.evidence import build_context_lines, number_lines
 from app.workflows.grounding import relevance
-
-
-def _context_lines(
-    numbered: list[tuple[int, str, int]],
-    focus_line_no: int,
-    *,
-    radius: int = 1,
-) -> list[EvidenceContextLine]:
-    return [
-        EvidenceContextLine(line_no=line_no, text=line[:2000], is_focus=line_no == focus_line_no)
-        for line_no, line, _start in numbered
-        if abs(line_no - focus_line_no) <= radius
-    ]
 
 
 def build_jd_evidence_refs(
@@ -66,7 +53,7 @@ def build_jd_evidence_refs(
                 char_end=start + len(line),
                 offset_status="verified",
                 requirement_id=requirement_id,
-                context_lines=_context_lines(numbered, line_no),
+                context_lines=build_context_lines(numbered, line_no),
             )
         )
         if len(refs) >= limit:
