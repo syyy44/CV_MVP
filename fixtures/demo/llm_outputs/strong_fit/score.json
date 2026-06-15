@@ -86,5 +86,47 @@
   "missing_must_haves": [],
   "unsupported_major_claims": [],
   "deal_breakers_found": [],
-  "risk_flags": []
+  "risk_flags": [],
+  "claim_verifications": [
+    {
+      "claim": "设计基于 LangGraph 的文档筛选工作流，包含校验与修复节点",
+      "credibility": "well_supported",
+      "reason": "声明配套了 Pydantic 有界修复重试、Langfuse 节点级追踪与 CI 评测 fixture，过程性细节完整、相互印证。",
+      "verification_hint": "要求现场画出节点拓扑与状态字段，并讲一条校验失败样本的完整修复路径。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 5
+        },
+        {
+          "source_type": "resume",
+          "line_no": 6
+        }
+      ]
+    },
+    {
+      "claim": "构建并运维日均 4 万次请求的生产级 FastAPI 服务",
+      "credibility": "plausible",
+      "reason": "有持续运维语境支撑，但未给出延迟分位、统计口径与峰值数据，规模声明待面试核实。",
+      "verification_hint": "追问 4 万次的统计口径（是否含健康检查/重试）、P50/P95 延迟与一次真实的容量调整。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 4
+        }
+      ]
+    },
+    {
+      "claim": "维护用于在 CI 中门禁 prompt 变更的评测 fixture",
+      "credibility": "plausible",
+      "reason": "声明具体且与可观测性实践一致，但缺少真实拦截案例佐证门禁实际生效。",
+      "verification_hint": "要求写出一条 fixture 的输入/断言/阈值，并讲一次真实阻断 prompt 变更的经历。",
+      "evidence": [
+        {
+          "source_type": "resume",
+          "line_no": 8
+        }
+      ]
+    }
+  ]
 }

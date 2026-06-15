@@ -1,4 +1,5 @@
-import { Activity, CheckCircle2, Clock, Hourglass, Loader2 } from "lucide-react";
+import { Activity, CheckCircle2, Clock, Hourglass, Loader2, XCircle } from "lucide-react";
+import * as React from "react";
 
 import { SectionTitle } from "@/components/SectionTitle";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -19,6 +20,13 @@ interface LiveProgressProps {
 export function LiveProgress({ runId }: LiveProgressProps) {
   const runQuery = useRun(runId);
   const eventsQuery = useEvents(runId, true);
+  // Elapsed/idle time must tick every second. React Query only re-renders when
+  // tracked result fields change; polling the same events payload does not.
+  const [now, setNow] = React.useState(() => new Date());
+  React.useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const run = runQuery.data?.run;
   if (!run) {
@@ -35,15 +43,8 @@ export function LiveProgress({ runId }: LiveProgressProps) {
     documents: runQuery.data?.documents ?? [],
     candidates: runQuery.data?.candidates ?? [],
     events: eventsQuery.data ?? [],
+    now,
   });
-  const metrics = run.metrics ?? {
-    llm_calls: 0,
-    input_tokens: 0,
-    output_tokens: 0,
-    cost_estimate_usd: 0,
-    duration_s: 0,
-  };
-
   const minutes = Math.floor(snapshot.elapsed_s / 60);
   const seconds = Math.floor(snapshot.elapsed_s % 60);
 
@@ -121,6 +122,8 @@ export function LiveProgress({ runId }: LiveProgressProps) {
                   <span className="flex min-w-0 items-center gap-2 text-sm font-medium">
                     {row.done ? (
                       <CheckCircle2 className="size-4 shrink-0 text-proceed" />
+                    ) : row.failed ? (
+                      <XCircle className="size-4 shrink-0 text-reject" />
                     ) : (
                       <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
                     )}
@@ -161,12 +164,6 @@ export function LiveProgress({ runId }: LiveProgressProps) {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Metric label={S.obsLlmCalls} value={metrics.llm_calls} />
-        <Metric label={S.obsInputTokens} value={metrics.input_tokens} />
-        <Metric label={S.obsOutputTokens} value={metrics.output_tokens} />
-        <Metric label={S.obsDuration} value={metrics.duration_s} />
-      </div>
     </div>
   );
 }

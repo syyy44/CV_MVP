@@ -15,7 +15,7 @@ goes back through the repair loop — an uncited claim never reaches a dossier.
 from __future__ import annotations
 
 from app.locale import zh_CN as msg
-from app.models.contracts import EVIDENCE_SNIPPET_MIN_LENGTH, EvidenceSpan
+from app.models.contracts import EVIDENCE_SNIPPET_MIN_LENGTH, EvidenceContextLine, EvidenceSpan
 from app.models.drafts import EvidenceSpanDraft
 from app.workflows.parsing import normalize_text
 
@@ -75,6 +75,16 @@ def _line_index(text: str) -> dict[int, tuple[str, int]]:
     return {line_no: (line, start) for line_no, line, start in number_lines(text)}
 
 
+def _context_lines(
+    numbered: list[tuple[int, str, int]], line_no: int, *, radius: int = 1
+) -> list[EvidenceContextLine]:
+    return [
+        EvidenceContextLine(line_no=n, text=line[:2000], is_focus=n == line_no)
+        for n, line, _start in numbered
+        if abs(n - line_no) <= radius
+    ]
+
+
 def build_line_index(
     documents_by_type: dict[str, dict],
 ) -> dict[str, dict[int, tuple[str, int]]]:
@@ -109,7 +119,8 @@ def resolve_draft(
     if doc is None:
         return msg.evidence_source_missing(draft.source_type)
 
-    index = _line_index(doc.get("text", ""))
+    numbered = number_lines(doc.get("text", ""))
+    index = {line_no: (line, start) for line_no, line, start in numbered}
     entry = index.get(draft.line_no)
     if entry is None:
         valid_max = max(index) if index else 0
@@ -127,6 +138,7 @@ def resolve_draft(
         char_end=char_start + len(verbatim),
         offset_status="verified",
         requirement_id=draft.requirement_id,
+        context_lines=_context_lines(numbered, draft.line_no),
     )
 
 

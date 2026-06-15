@@ -13,7 +13,7 @@ export const AccordionItem = React.forwardRef<
   <AccordionPrimitive.Item
     ref={ref}
     className={cn(
-      "rounded-lg border border-border bg-card/60 px-4 transition-colors hover:border-primary/30",
+      "rounded-lg border border-border bg-card px-4 shadow-xs transition-colors hover:border-primary/30",
       className,
     )}
     {...props}

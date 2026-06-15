@@ -24,6 +24,8 @@ from app.models.export import EvalResultSummary
 from app.storage.db import connect
 from app.workflows import interview_script as script_lib
 from app.workflows.evidence import number_lines
+from app.workflows.grounding import relevance
+from app.workflows.requirement_refs import build_jd_evidence_refs
 
 
 def _now() -> str:
@@ -343,6 +345,8 @@ def _iter_evidence_spans(result: CandidateRunResult):
     if not isinstance(dossier, DecisionDossier):
         return
     yield from dossier.score.evidence_refs
+    for req in dossier.score.requirement_results:
+        yield from req.jd_evidence_refs
     for claim in dossier.score.claim_verifications:
         yield from claim.evidence_refs
     for follow_up in dossier.follow_ups:
@@ -359,6 +363,72 @@ def _enrich_evidence_context(result: CandidateRunResult, documents_by_id: dict[s
         span.context_lines = _context_lines_for_span(span, doc)
 
 
+def _dedupe_spans_by_line(spans: list[EvidenceSpan]) -> list[EvidenceSpan]:
+    seen: set[tuple[str, int | None, str]] = set()
+    unique: list[EvidenceSpan] = []
+    for span in spans:
+        key = (span.document_id, span.line_no, span.snippet)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(span)
+    return unique
+
+
+def _rank_jd_refs_for_requirement(
+    spans: list[EvidenceSpan], requirement_text: str, *, limit: int = 2
+) -> list[EvidenceSpan]:
+    return sorted(
+        spans,
+        key=lambda span: (-relevance(requirement_text, span.snippet), span.line_no or 0),
+    )[:limit]
+
+
+def _shared_jd_refs_by_requirement(
+    results: list[CandidateRunResult],
+) -> dict[str, list[EvidenceSpan]]:
+    refs_by_requirement: dict[str, list[EvidenceSpan]] = {}
+    for result in results:
+        dossier = result.dossier
+        if not isinstance(dossier, DecisionDossier):
+            continue
+        for span in dossier.score.evidence_refs:
+            if span.source_type != "jd" or not span.requirement_id:
+                continue
+            refs_by_requirement.setdefault(span.requirement_id, []).append(span)
+    return {
+        requirement_id: _dedupe_spans_by_line(spans)
+        for requirement_id, spans in refs_by_requirement.items()
+    }
+
+
+def _enrich_requirement_jd_refs(
+    results: list[CandidateRunResult],
+    documents_by_id: dict[str, dict],
+) -> None:
+    jd_doc = next((doc for doc in documents_by_id.values() if doc["source_type"] == "jd"), None)
+    shared_refs = _shared_jd_refs_by_requirement(results)
+    for result in results:
+        dossier = result.dossier
+        if not isinstance(dossier, DecisionDossier):
+            continue
+        for req in dossier.score.requirement_results:
+            if req.jd_evidence_refs:
+                continue
+            req.jd_evidence_refs = _rank_jd_refs_for_requirement(
+                shared_refs.get(req.requirement_id, []),
+                req.display_label,
+            )
+            if not req.jd_evidence_refs and jd_doc is not None:
+                req.jd_evidence_refs = build_jd_evidence_refs(
+                    req.requirement_id,
+                    req.display_label,
+                    jd_doc,
+                )
+    for result in results:
+        _enrich_evidence_context(result, documents_by_id)
+
+
 def get_candidate_results(run_id: str) -> list[CandidateRunResult]:
     with connect() as conn:
         rows = conn.execute(
@@ -367,8 +437,7 @@ def get_candidate_results(run_id: str) -> list[CandidateRunResult]:
         ).fetchall()
     documents_by_id = {doc["document_id"]: doc for doc in get_documents(run_id)}
     results = [_row_to_result(r) for r in rows]
-    for result in results:
-        _enrich_evidence_context(result, documents_by_id)
+    _enrich_requirement_jd_refs(results, documents_by_id)
     return results
 
 
@@ -381,7 +450,7 @@ def get_candidate(candidate_id: str) -> tuple[str, CandidateRunResult] | None:
         return None
     result = _row_to_result(row)
     documents_by_id = {doc["document_id"]: doc for doc in get_documents(row["run_id"])}
-    _enrich_evidence_context(result, documents_by_id)
+    _enrich_requirement_jd_refs([result], documents_by_id)
     return row["run_id"], result
 
 

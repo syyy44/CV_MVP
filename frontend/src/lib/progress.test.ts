@@ -70,6 +70,59 @@ describe("buildProgressSnapshot", () => {
     expect(snapshot.candidate_rows[0].label).toBe("沈洋");
   });
 
+  it("maps candidates to resumes by name, not parallel event order", () => {
+    const snapshot = buildProgressSnapshot({
+      run: { status: "running", started_at: ts(0), created_at: ts(0) },
+      documents: [
+        { source_type: "resume", filename: "小黄_深度实战版_.pdf" },
+        { source_type: "resume", filename: "小赵_深度实战版_v5_v6.pdf" },
+        { source_type: "resume", filename: "小吴_深度实战版_vFinal.pdf" },
+      ],
+      candidates: [
+        { candidate_id: "bbdb0987", status: "failed" },
+      ],
+      events: [
+        {
+          id: 1,
+          event_type: "rubric_extracted",
+          node_name: "extract_jd_rubric",
+          timestamp: ts(1),
+        },
+        {
+          id: 2,
+          event_type: "llm_call_started",
+          node_name: "extract_candidate_profile",
+          candidate_id: "cc1e8bee",
+          timestamp: ts(2),
+        },
+        {
+          id: 3,
+          event_type: "candidate_profile_extracted",
+          node_name: "extract_candidate_profile",
+          candidate_id: "fb67796e",
+          timestamp: ts(2, 30),
+          metadata: { candidate_name: "小吴" },
+        },
+        {
+          id: 4,
+          event_type: "llm_call_started",
+          node_name: "generate_interview_pack",
+          candidate_id: "fb67796e",
+          timestamp: ts(3),
+          metadata: { candidate_name: "小吴" },
+        },
+      ],
+      now: new Date(Date.UTC(2026, 5, 11, 12, 3, 30)),
+    });
+
+    const wuRow = snapshot.candidate_rows.find((row) =>
+      row.label.includes("小吴"),
+    );
+    expect(wuRow?.done).toBe(false);
+    expect(wuRow?.failed).toBe(false);
+    expect(wuRow?.stage).not.toBe("已完成");
+  });
+
   it("rolls up after rubric completion with no candidates done", () => {
     const snapshot = buildProgressSnapshot({
       run: { status: "running", started_at: ts(0), created_at: ts(0) },

@@ -2,7 +2,7 @@
 
 模型不得断言文档身份、哈希或偏移；只能引用原文片段。
 Draft 经 `app.workflows.evidence` 解析为受信任的 `EvidenceSpan`。
-字段描述会进入服务商 strict JSON Schema（`response_format.json_schema`），
+字段描述会进入服务商 JSON Schema 或等效结构化输出提示，
 并解释关键字段的业务含义与下游后果。
 """
 
@@ -293,22 +293,22 @@ class ClaimVerificationDraft(BaseModel):
 
 class ScoreAnalysisDraft(BaseModel):
     required_skills: DimensionAssessment = Field(
-        description="必备技能覆盖度评估（权重 0.35）。",
+        description="必备技能覆盖度评估；实际权重来自本次 JobRubric.evaluation_weights。",
     )
     preferred_skills: DimensionAssessment = Field(
-        description="加分技能覆盖度评估（权重 0.15）。",
+        description="加分技能覆盖度评估；实际权重来自本次 JobRubric.evaluation_weights。",
     )
     experience_relevance: DimensionAssessment = Field(
-        description="经历与岗位相关性评估（权重 0.20）。",
+        description="经历与岗位相关性评估；实际权重来自本次 JobRubric.evaluation_weights。",
     )
     project_depth: DimensionAssessment = Field(
-        description="项目深度与 ownership 评估（权重 0.15）。",
+        description="项目深度与 ownership 评估；实际权重来自本次 JobRubric.evaluation_weights。",
     )
     ai_engineering_maturity: DimensionAssessment = Field(
-        description="AI/LLM 工程实践成熟度评估（权重 0.10）。",
+        description="AI/LLM 工程实践成熟度评估；实际权重来自本次 JobRubric.evaluation_weights。",
     )
     communication_clarity: DimensionAssessment = Field(
-        description="简历表达清晰度评估（权重 0.05）。",
+        description="简历表达清晰度评估；实际权重来自本次 JobRubric.evaluation_weights。",
     )
     confidence: float = Field(
         ge=0,
@@ -371,7 +371,10 @@ class FollowUpDraft(BaseModel):
     )
     evidence: list[EvidenceSpanDraft] = Field(
         min_length=1,
-        description="触发该追问的简历原文引用；优先整行复制。",
+        description=(
+            "触发该追问的简历原文引用；只填 source_type=resume 与对应 [R*] 行号，"
+            "不要复制、改写或拼接原文。"
+        ),
     )
 
 

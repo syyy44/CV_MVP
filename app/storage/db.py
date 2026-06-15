@@ -5,6 +5,7 @@ import sqlite3
 from app.core.config import get_settings
 
 SCHEMA_VERSION = 2
+STALE_RUN_RECOVERY_MINUTES = 120
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -46,6 +47,19 @@ CREATE TABLE IF NOT EXISTS candidate_results (
     dossier_json TEXT,
     errors_json TEXT NOT NULL DEFAULT '[]',
     sort_score INTEGER NOT NULL DEFAULT -1,
+    created_at TEXT NOT NULL,
+    override_recommendation TEXT,
+    override_rationale TEXT,
+    override_actor TEXT,
+    override_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS candidate_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    candidate_id TEXT NOT NULL,
+    run_id TEXT NOT NULL,
+    body TEXT NOT NULL,
+    author TEXT NOT NULL DEFAULT '面试官',
     created_at TEXT NOT NULL
 );
 
@@ -97,6 +111,7 @@ CREATE TABLE IF NOT EXISTS eval_results (
 CREATE INDEX IF NOT EXISTS idx_events_run ON decision_events(run_id);
 CREATE INDEX IF NOT EXISTS idx_docs_run ON documents(run_id);
 CREATE INDEX IF NOT EXISTS idx_candidates_run ON candidate_results(run_id);
+CREATE INDEX IF NOT EXISTS idx_notes_candidate ON candidate_notes(candidate_id);
 """
 
 
@@ -122,15 +137,33 @@ def init_db() -> None:
             conn.execute(
                 "ALTER TABLE documents ADD COLUMN page_texts_json TEXT NOT NULL DEFAULT '[]'"
             )
+        if "source_bytes" not in columns:
+            conn.execute("ALTER TABLE documents ADD COLUMN source_bytes BLOB")
+        candidate_columns = {
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(candidate_results)").fetchall()
+        }
+        for column in (
+            "override_recommendation",
+            "override_rationale",
+            "override_actor",
+            "override_at",
+        ):
+            if column not in candidate_columns:
+                conn.execute(f"ALTER TABLE candidate_results ADD COLUMN {column} TEXT")
         conn.execute(
             "INSERT OR IGNORE INTO schema_version (version) VALUES (?)",
             (SCHEMA_VERSION,),
         )
         # BackgroundTasks are in-process, not durable. If the API process dies
         # mid-run, an old `queued`/`running` row would otherwise stay stuck
-        # forever. Startup makes the failure explicit and user-visible.
+        # forever. Do not fail fresh rows immediately: dev-server reloads or
+        # test processes can initialize the DB while another process is still
+        # actively executing the run.
         conn.execute(
             "UPDATE runs SET status = 'failed', finished_at = CURRENT_TIMESTAMP,"
             " error = '启动时恢复了孤立运行；请创建新的运行'"
             " WHERE status IN ('queued', 'running')"
+            " AND datetime(COALESCE(started_at, created_at))"
+            f" < datetime('now', '-{STALE_RUN_RECOVERY_MINUTES} minutes')"
         )

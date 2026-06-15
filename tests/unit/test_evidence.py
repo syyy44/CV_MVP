@@ -60,6 +60,10 @@ def test_resolve_draft_returns_verbatim_line_as_verified():
     assert span.line_no == 1
     assert span.snippet == "Li Wei built and operated FastAPI services in production"
     assert DOC["text"][span.char_start : span.char_end] == span.snippet
+    assert [(line.line_no, line.is_focus) for line in span.context_lines] == [
+        (1, True),
+        (2, False),
+    ]
 
 
 def test_resolve_draft_out_of_range_line_is_a_problem():

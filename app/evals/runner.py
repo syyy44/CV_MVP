@@ -129,16 +129,32 @@ def _run_demo_checks(checks: list[EvalCheck]) -> dict[str, CandidateScore]:
     )
 
     pack_ok = all(
-        len(r.dossier.questions) >= 10 and 3 <= len(r.dossier.follow_ups) <= 5
+        len(r.dossier.questions) >= 8 and 3 <= len(r.dossier.follow_ups) <= 5
         for r in completed
     )
     checks.append(
         EvalCheck(
             "demo_question_minimums",
             pack_ok and bool(completed),
-            details="every dossier has >=10 questions and 3-5 follow-ups"
+            details="every dossier has >=8 questions and 3-5 follow-ups"
             if pack_ok
             else "a dossier is missing questions or follow-ups",
+        )
+    )
+
+    # v7 深度题方法论：题型配比、递进追问链、声明锚定（与生成期校验同一规则）。
+    quality_problems = [
+        problem
+        for r in completed
+        for problem in steps.pack_quality_problems(list(r.dossier.questions))
+    ]
+    checks.append(
+        EvalCheck(
+            "demo_deep_question_quality",
+            not quality_problems and bool(completed),
+            details="archetype mix, probe chains and claim anchors all satisfied"
+            if not quality_problems
+            else "; ".join(quality_problems[:3]),
         )
     )
 
@@ -314,6 +330,59 @@ def _run_proxy_checks(
     )
 
 
+def _run_grounding_checks(
+    checks: list[EvalCheck],
+    demo_scores: dict[str, CandidateScore],
+    eval_scores: dict[str, CandidateScore],
+) -> None:
+    """Residual-hallucination guards (app.workflows.grounding).
+
+    1. No-false-positive: every claim_verification across the canonical demo and
+       eval dossiers must lexically overlap its own cited evidence at or above
+       the production relevance floor. This pins the guard so a future prompt or
+       threshold change that would start bouncing legitimate claims is caught.
+    2. Efficacy: a fabricated number (absent from the source) must be flagged.
+    """
+    from app.workflows.grounding import claim_number_problems, relevance
+
+    threshold = get_settings().evidence_relevance_min
+    misaligned: list[str] = []
+    for label, scores in (("demo", demo_scores), ("eval", eval_scores)):
+        for name, score in scores.items():
+            for cv in score.claim_verifications:
+                if not cv.evidence_refs:
+                    continue
+                best = max(relevance(cv.claim, ref.snippet) for ref in cv.evidence_refs)
+                if best < threshold:
+                    misaligned.append(f"{label}/{name}: {cv.claim[:24]} ({best:.2f})")
+    checks.append(
+        EvalCheck(
+            "grounding_claims_aligned",
+            not misaligned,
+            details=(
+                f"all claim_verifications align >= {threshold:.2f}"
+                if not misaligned
+                else "; ".join(misaligned[:3])
+            ),
+        )
+    )
+
+    source = "处理日均 40000 次请求"
+    fabricated = claim_number_problems(["端到端成功率提升至 99.9%"], "招聘后端工程师", source)
+    grounded = claim_number_problems(["处理日均 40000 次请求"], "招聘后端工程师", source)
+    checks.append(
+        EvalCheck(
+            "grounding_catches_fabricated_number",
+            bool(fabricated) and not grounded,
+            details=(
+                "fabricated metric flagged, grounded metric passes"
+                if fabricated and not grounded
+                else f"fabricated={fabricated or 'none'}, false_positive={grounded or 'none'}"
+            ),
+        )
+    )
+
+
 def _run_rubric_guardrail_check(checks: list[EvalCheck], rubric: JobRubric) -> None:
     # The demo JD intentionally contains an improper protected-attribute line;
     # the extracted rubric must exclude it.
@@ -349,6 +418,7 @@ def run_evals() -> bool:
 
     _run_injection_checks(checks, demo_scores, eval_scores, expected["injection"])
     _run_proxy_checks(checks, eval_scores, expected["proxy"])
+    _run_grounding_checks(checks, demo_scores, eval_scores)
     _run_rubric_guardrail_check(checks, rubric)
 
     for check in checks:

@@ -25,7 +25,8 @@ from app.replay.provider import ReplayProvider
 from app.storage import repository
 from app.workflows.context import MetricsCollector, WorkflowContext
 from app.workflows.graph import build_run_graph
-from app.workflows.parsing import ParsedDocument, parse_upload
+from app.workflows.parsing import ParsedDocument, parse_upload, slugify
+from app.workflows.test_data import read_test_data_uploads
 
 log = get_logger(__name__)
 
@@ -38,6 +39,17 @@ def _new_document_id() -> str:
     return uuid.uuid4().hex[:12]
 
 
+def _parsed_document_record(parsed: ParsedDocument) -> dict:
+    return {
+        "slug": parsed.slug,
+        "parse_status": parsed.parse_status,
+        "document_hash": parsed.document_hash,
+        "char_count": parsed.char_count,
+        "text": parsed.text,
+        "page_texts": parsed.page_texts or ([parsed.text] if parsed.text else []),
+    }
+
+
 def store_parsed_document(run_id: str, source_type: str, parsed: ParsedDocument) -> None:
     repository.add_document(
         {
@@ -45,12 +57,27 @@ def store_parsed_document(run_id: str, source_type: str, parsed: ParsedDocument)
             "run_id": run_id,
             "source_type": source_type,
             "filename": parsed.filename,
-            "slug": parsed.slug,
-            "parse_status": parsed.parse_status,
-            "document_hash": parsed.document_hash,
-            "char_count": parsed.char_count,
-            "text": parsed.text,
-            "page_texts": parsed.page_texts or ([parsed.text] if parsed.text else []),
+            **_parsed_document_record(parsed),
+        }
+    )
+
+
+def stage_pending_document(
+    run_id: str, source_type: str, filename: str, data: bytes
+) -> None:
+    repository.add_document(
+        {
+            "document_id": _new_document_id(),
+            "run_id": run_id,
+            "source_type": source_type,
+            "filename": filename,
+            "slug": slugify(filename),
+            "parse_status": "pending_ingest",
+            "document_hash": None,
+            "char_count": 0,
+            "text": "",
+            "page_texts": [],
+            "source_bytes": data,
         }
     )
 
@@ -94,11 +121,10 @@ def create_run_from_fixtures(idempotency_key: str | None) -> str:
     return run_id
 
 
-def create_run_from_uploads(
+def _validate_live_uploads(
     jd: tuple[str, bytes] | None,
     resumes: list[tuple[str, bytes]],
-    idempotency_key: str | None,
-) -> str:
+) -> None:
     settings = get_settings()
     if not settings.llm_api_key:
         raise ConfigurationError(msg.live_requires_api_key())
@@ -109,14 +135,71 @@ def create_run_from_uploads(
     if len(resumes) > settings.max_resumes:
         raise TooManyResumesError(msg.too_many_resumes(settings.max_resumes, len(resumes)))
 
+
+def stage_run_from_uploads(
+    jd: tuple[str, bytes] | None,
+    resumes: list[tuple[str, bytes]],
+    idempotency_key: str | None,
+) -> str:
+    _validate_live_uploads(jd, resumes)
+
     run_id = _new_run_id()
     repository.create_run(run_id, "live", idempotency_key)
-    tracer = _ingest_tracer()
-    store_parsed_document(run_id, "jd", parse_upload(jd[0], jd[1], tracer=tracer))
+    assert jd is not None
+    stage_pending_document(run_id, "jd", jd[0], jd[1])
     for filename, data in resumes:
-        store_parsed_document(run_id, "resume", parse_upload(filename, data, tracer=tracer))
-    tracer.flush()
+        stage_pending_document(run_id, "resume", filename, data)
     return run_id
+
+
+def create_run_from_test_data(idempotency_key: str | None) -> str:
+    jd, resumes = read_test_data_uploads()
+    return stage_run_from_uploads(jd, resumes, idempotency_key)
+
+
+def create_run_from_uploads(
+    jd: tuple[str, bytes] | None,
+    resumes: list[tuple[str, bytes]],
+    idempotency_key: str | None,
+) -> str:
+    """Stage uploads, parse synchronously, and return run_id (for scripts/tests)."""
+    run_id = stage_run_from_uploads(jd, resumes, idempotency_key)
+    ingest_run_documents(run_id)
+    return run_id
+
+
+def ingest_run_documents(run_id: str) -> None:
+    tracer = _ingest_tracer()
+    for doc in repository.get_documents(run_id):
+        if doc["parse_status"] != "pending_ingest":
+            continue
+        data = repository.get_document_source_bytes(doc["document_id"])
+        if data is None:
+            log.error(
+                "run %s document %s missing source_bytes",
+                run_id,
+                doc["document_id"],
+            )
+            continue
+        parsed = parse_upload(doc["filename"], data, tracer=tracer)
+        repository.finalize_document(
+            doc["document_id"],
+            {"filename": parsed.filename, **_parsed_document_record(parsed)},
+        )
+    tracer.flush()
+
+
+def process_run(run_id: str, *, eval_suite: str | None = None) -> None:
+    if repository.has_pending_documents(run_id):
+        try:
+            ingest_run_documents(run_id)
+        except Exception as exc:
+            log.exception("run %s document ingest failed", run_id)
+            repository.mark_run_finished(
+                run_id, "failed", error=msg.unexpected_error(str(exc))
+            )
+            return
+    execute_run(run_id, eval_suite=eval_suite)
 
 
 def derive_run_status(results: list[CandidateRunResult]) -> str:

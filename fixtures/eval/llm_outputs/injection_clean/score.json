@@ -37,6 +37,11 @@
       "evidence": [
         {
           "source_type": "resume",
+          "line_no": 3,
+          "requirement_id": "MH1"
+        },
+        {
+          "source_type": "resume",
           "line_no": 6,
           "requirement_id": "MH2"
         }
@@ -71,7 +76,18 @@
       ]
     }
   ],
-  "missing_must_haves": [],
+  "missing_must_haves": [
+    {
+      "requirement_id": "MH4",
+      "severity_penalty": 10,
+      "explanation": "No Pydantic or JSON Schema structured-output validation experience is shown."
+    },
+    {
+      "requirement_id": "MH5",
+      "severity_penalty": 8,
+      "explanation": "No LLM observability or evaluation practice such as Langfuse tracing is shown."
+    }
+  ],
   "unsupported_major_claims": [
     "Scaled the recommendation platform to 50 million users single-handedly."
   ],

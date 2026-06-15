@@ -30,10 +30,22 @@ include = ["app*"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-extend-exclude = [".venv", "data"]
+extend-exclude = [
+    ".agents",
+    ".cursor",
+    ".gstack",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    "data",
+    "recruiting_assistant.egg-info",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = ["E402"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

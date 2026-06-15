@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 EventType = Literal[
     "document_parsed",
     "rubric_extracted",
+    "candidate_started",
     "llm_call_started",
     "candidate_profile_extracted",
     "schema_validation_failed",
@@ -19,6 +20,7 @@ EventType = Literal[
     "questions_generated",
     "dossier_completed",
     "human_override_recorded",
+    "note_added",
 ]
 
 

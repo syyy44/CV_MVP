@@ -60,13 +60,13 @@ export function DataTable<T>({
       style={{ maxHeight }}
     >
       <table className="w-full border-collapse text-sm">
-        <thead className="sticky top-0 z-10 bg-secondary/95 backdrop-blur">
+        <thead className="sticky top-0 z-10 bg-muted/90 backdrop-blur">
           <tr>
             {columns.map((col) => (
               <th
                 key={col.key}
                 className={cn(
-                  "px-3 py-2 text-left font-medium text-muted-foreground",
+                  "px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground",
                   col.align === "right" && "text-right",
                 )}
               >
@@ -111,13 +111,13 @@ export function DataTable<T>({
             sorted.map((row, index) => (
               <tr
                 key={rowKey(row, index)}
-                className="border-t border-border/60 transition-colors hover:bg-secondary/40"
+                className="border-t border-border/70 transition-colors hover:bg-muted/50"
               >
                 {columns.map((col) => (
                   <td
                     key={col.key}
                     className={cn(
-                      "px-3 py-2 align-top",
+                      "px-3 py-2.5 align-top",
                       col.align === "right" && "text-right tabular-nums",
                       col.className,
                     )}

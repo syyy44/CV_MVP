@@ -1,0 +1,46 @@
+{
+  "date": "2026-06-12",
+  "window": "7d",
+  "focus": "v1-mvp-interviewer-gap",
+  "metrics": {
+    "commits": 1,
+    "contributors": 1,
+    "prs_merged": 0,
+    "insertions": 25543,
+    "deletions": 0,
+    "net_loc": 25543,
+    "test_loc": 106,
+    "test_ratio": 0.004,
+    "active_days": 1,
+    "sessions": 1,
+    "deep_sessions": 1,
+    "avg_session_minutes": 480,
+    "loc_per_session_hour": 3200,
+    "feat_pct": 1.0,
+    "fix_pct": 0.0,
+    "peak_hour": 14,
+    "ai_assisted_commits": 1,
+    "python_tests": 114,
+    "eval_checks_passed": 13
+  },
+  "authors": {
+    "沈洋": {
+      "commits": 1,
+      "insertions": 25543,
+      "deletions": 0,
+      "test_ratio": 0.004,
+      "top_area": "app/"
+    }
+  },
+  "version_range": ["0.1.0", "0.1.0"],
+  "streak_days": 1,
+  "product_gaps": [
+    "persona_mismatch_evaluator_vs_interviewer",
+    "scenario_b_stub_only",
+    "interview_pack_not_first_class_workflow",
+    "no_side_by_side_compare",
+    "no_interview_script_export",
+    "ui_tabs_auditor_heavy"
+  ],
+  "tweetable": "V1 单次交付：25k LOC、114 tests、13 evals 全绿；Scenario A 完整，Scenario B 仅占位；面试官痛点（上场即用）未命中"
+}

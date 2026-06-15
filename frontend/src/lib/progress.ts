@@ -1,4 +1,5 @@
-// TS port of ui/progress.py. Pure functions, unit-tested in progress.test.ts.
+// Pure progress derivation for the polling UI. Kept side-effect free so the
+// live-progress behavior can be covered by focused vitest cases.
 
 import {
   CANDIDATE_STAGE_LABELS,
@@ -30,6 +31,7 @@ export interface CandidateRow {
   label: string;
   stage: string;
   done: boolean;
+  failed: boolean;
 }
 
 export interface ProgressSnapshot {
@@ -126,6 +128,47 @@ function candidateNames(events: LooseEvent[]): Record<string, string> {
   return names;
 }
 
+function metaFilename(event: LooseEvent): string | undefined {
+  const filename = event.metadata?.["filename"] ?? event.metadata?.["resume_filename"];
+  return typeof filename === "string" ? filename : undefined;
+}
+
+function filenameToCandidateId(
+  events: LooseEvent[],
+  resumes: string[],
+): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const event of events) {
+    const candidateId = event.candidate_id;
+    if (!candidateId) continue;
+    const filename = metaFilename(event);
+    if (filename && resumes.includes(filename)) {
+      map[filename] = candidateId;
+    }
+  }
+  const names = candidateNames(events);
+  for (const [candidateId, name] of Object.entries(names)) {
+    if (Object.values(map).includes(candidateId)) continue;
+    const filename = resumes.find((file) => file.includes(name));
+    if (filename && !(filename in map)) {
+      map[filename] = candidateId;
+    }
+  }
+  const candidateIdsWithEvents = new Set(
+    events
+      .map((event) => event.candidate_id)
+      .filter((candidateId): candidateId is string => Boolean(candidateId)),
+  );
+  if (resumes.length === 1 && candidateIdsWithEvents.size === 1) {
+    const onlyResume = resumes[0];
+    const onlyCandidate = [...candidateIdsWithEvents][0];
+    if (!(onlyResume in map)) {
+      map[onlyResume] = onlyCandidate;
+    }
+  }
+  return map;
+}
+
 function pendingLlm(events: LooseEvent[]): LooseEvent | null {
   for (let index = events.length - 1; index >= 0; index--) {
     const event = events[index];
@@ -186,40 +229,40 @@ export function buildProgressSnapshot(args: {
   const eventTypes = new Set(events.map((event) => event.event_type));
   const resumes = resumeFilenames(documents);
   const resumeTotal = Math.max(resumes.length, 1);
+  const pendingIngest = documents.some((doc) => doc.parse_status === "pending_ingest");
   const names = candidateNames(events);
   const pending = pendingLlm(events);
 
   const completedIds = new Set<string>();
+  const failedIds = new Set<string>();
   for (const event of events) {
     if (event.event_type === "dossier_completed" && event.candidate_id) {
       completedIds.add(event.candidate_id);
     }
   }
   for (const candidate of candidates) {
-    if (
+    if (!candidate.candidate_id) continue;
+    if (candidate.status === "failed") {
+      failedIds.add(candidate.candidate_id);
+    } else if (
       candidate.status &&
-      ["completed", "needs_review", "failed"].includes(candidate.status) &&
-      candidate.candidate_id
+      ["completed", "needs_review"].includes(candidate.status)
     ) {
       completedIds.add(candidate.candidate_id);
     }
   }
 
-  const activeIds: string[] = [];
-  const seenIds = new Set<string>();
-  for (const event of events) {
-    const candidateId = event.candidate_id;
-    if (candidateId && !seenIds.has(candidateId)) {
-      seenIds.add(candidateId);
-      activeIds.push(candidateId);
-    }
-  }
+  const resumeToCandidateId = filenameToCandidateId(events, resumes);
 
   let headline: string;
   let stepLabel: string;
   let progress: number;
 
-  if (run.status === "queued") {
+  if (run.status === "queued" && pendingIngest) {
+    headline = S.progressParsingDocs;
+    stepLabel = S.progressStepIngest;
+    progress = 0.05;
+  } else if (run.status === "queued") {
     headline = S.progressQueued;
     stepLabel = S.progressStepIngest;
     progress = 0.02;
@@ -271,14 +314,21 @@ export function buildProgressSnapshot(args: {
   }
 
   const candidateRows: CandidateRow[] = [];
-  resumes.forEach((filename, index) => {
-    const candidateId = index < activeIds.length ? activeIds[index] : null;
+  resumes.forEach((filename) => {
+    const candidateId = resumeToCandidateId[filename] ?? null;
     let stage: string;
     let label: string;
+    let failed = false;
     if (candidateId) {
-      stage = candidateStage(events, candidateId);
       label = names[candidateId] ?? filename;
-      if (completedIds.has(candidateId)) stage = "done";
+      if (failedIds.has(candidateId)) {
+        stage = "failed";
+        failed = true;
+      } else if (completedIds.has(candidateId)) {
+        stage = "done";
+      } else {
+        stage = candidateStage(events, candidateId);
+      }
     } else {
       stage = "queued";
       label = filename;
@@ -287,6 +337,7 @@ export function buildProgressSnapshot(args: {
       label,
       stage: CANDIDATE_STAGE_LABELS[stage] ?? stage,
       done: stage === "done",
+      failed,
     });
   });
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass, field
+from datetime import date
 
 from app.core.config import Settings
 from app.ledger.events import LedgerRecorder
@@ -48,3 +49,4 @@ class WorkflowContext:
     tracer: Tracer
     metrics: MetricsCollector = field(default_factory=MetricsCollector)
     red_team_slugs: frozenset[str] = frozenset()
+    evaluation_date: str = field(default_factory=lambda: date.today().isoformat())

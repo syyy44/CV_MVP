@@ -76,6 +76,17 @@ def fan_out(state: RunGraphState):
 
 def process_candidate_node(state: CandidateState) -> dict:
     ctx = state["ctx"]
+    resume_doc = state["resume_doc"]
+    ctx.ledger.emit(
+        "candidate_started",
+        node_name="process_candidate",
+        candidate_id=state["candidate_id"],
+        metadata={
+            "filename": resume_doc["filename"],
+            "document_id": resume_doc["document_id"],
+            "slug": state["slug"],
+        },
+    )
     red_team = state["slug"] in ctx.red_team_slugs
     with ctx.tracer.candidate_scope(
         ctx.run_id,

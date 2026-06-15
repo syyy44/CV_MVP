@@ -60,6 +60,18 @@ class CandidateNotFoundError(DomainError):
     http_status = 404
 
 
+class CandidateNotCompletedError(DomainError):
+    code = "candidate_not_completed"
+    http_status = 409
+
+
+class CompareNotComparableError(DomainError):
+    """Two candidates cannot be compared (e.g. not from the same run/JD)."""
+
+    code = "compare_not_comparable"
+    http_status = 400
+
+
 # ---- Audit export -------------------------------------------------------------
 
 

@@ -57,6 +57,7 @@ export interface RequirementResult {
   kind: "must_have";
   met: boolean;
   weight: number;
+  jd_evidence_refs?: EvidenceSpan[];
 }
 
 export type ClaimCredibility =

@@ -18,19 +18,17 @@ if str(ROOT) not in sys.path:
 from pydantic import BaseModel
 
 from app.core.config import get_settings
-from app.storage.db import init_db
 from app.storage import repository
+from app.storage.db import init_db
 from app.workflows import steps
 from app.workflows.parsing import parse_upload
 from app.workflows.runner import (
     create_run_from_uploads,
     execute_run,
-    store_parsed_document,
 )
+from app.workflows.test_data import list_test_data_files
 
 TEST_DIR = ROOT / "data" / "test"
-JD_FILE = TEST_DIR / "ai_agent_job_description.txt"
-RESUME_FILE = TEST_DIR / "沈洋简历_0526.pdf"
 TEXT_PREVIEW = 500
 
 
@@ -63,7 +61,15 @@ class StepLogger:
     def __init__(self) -> None:
         self.entries: list[dict[str, Any]] = []
 
-    def record(self, step: str, phase: str, *, input_data: Any, output_data: Any, ms: float) -> None:
+    def record(
+        self,
+        step: str,
+        phase: str,
+        *,
+        input_data: Any,
+        output_data: Any,
+        ms: float,
+    ) -> None:
         self.entries.append(
             {
                 "step": step,
@@ -78,9 +84,13 @@ class StepLogger:
 
 
 def main() -> int:
-    if not JD_FILE.exists() or not RESUME_FILE.exists():
-        print(f"Missing test files under {TEST_DIR}", file=sys.stderr)
+    try:
+        test_files = list_test_data_files()
+    except Exception as exc:
+        print(f"Missing test files under {TEST_DIR}: {exc}", file=sys.stderr)
         return 1
+    jd_file = test_files.jd
+    resume_file = test_files.resumes[0]
 
     settings = get_settings()
     if not settings.llm_api_key:
@@ -94,13 +104,14 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"=== E2E test data/test -> {out_dir} ===", flush=True)
-    print(f"model={settings.model_name} qianfan={'yes' if settings.qianfan_api_key else 'no'}", flush=True)
+    qianfan = "yes" if settings.qianfan_api_key else "no"
+    print(f"model={settings.model_name} qianfan={qianfan}", flush=True)
 
     # ---- Phase 1: document parsing (upload-time) ----
     parse_artifacts: dict[str, str] = {}
     parsed_docs: list[tuple[str, Any]] = []
 
-    for label, path in [("jd", JD_FILE), ("resume", RESUME_FILE)]:
+    for label, path in [("jd", jd_file), ("resume", resume_file)]:
         data = path.read_bytes()
         t0 = time.monotonic()
         parsed = parse_upload(path.name, data)
@@ -129,19 +140,19 @@ def main() -> int:
             return 2
 
     # ---- Phase 2: create run + execute workflow ----
-    jd_data = JD_FILE.read_bytes()
-    resume_data = RESUME_FILE.read_bytes()
+    jd_data = jd_file.read_bytes()
+    resume_data = resume_file.read_bytes()
     t_create = time.monotonic()
     run_id = create_run_from_uploads(
-        (JD_FILE.name, jd_data),
-        [(RESUME_FILE.name, resume_data)],
+        (jd_file.name, jd_data),
+        [(resume_file.name, resume_data)],
         idempotency_key=f"e2e-test-{ts}",
     )
     create_ms = (time.monotonic() - t_create) * 1000
     logger.record(
         "create_run_from_uploads",
         "orchestration",
-        input_data={"jd": JD_FILE.name, "resumes": [RESUME_FILE.name]},
+        input_data={"jd": jd_file.name, "resumes": [resume_file.name]},
         output_data={"run_id": run_id},
         ms=create_ms,
     )
@@ -201,7 +212,11 @@ def main() -> int:
             logger.record(name, "workflow", input_data=inp, output_data=out, ms=ms)
             step_path.write_text(
                 json.dumps(
-                    {"input": _serialize(inp), "output": _serialize(out), "duration_ms": round(ms, 1)},
+                    {
+                        "input": _serialize(inp),
+                        "output": _serialize(out),
+                        "duration_ms": round(ms, 1),
+                    },
                     ensure_ascii=False,
                     indent=2,
                 ),

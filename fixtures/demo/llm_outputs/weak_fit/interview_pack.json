@@ -1,171 +1,207 @@
 {
   "questions": [
     {
-      "question": "描述你在 React 中解决过的最复杂状态管理问题，以及你的推理过程。",
-      "competency": "工程基础",
+      "question": "简历提到「优化结账漏斗的 Core Web Vitals 指标」。请拆一下口径：优化的是哪个指标（LCP/INP/CLS）、从多少优化到多少、数据来自真实用户监控还是 Lighthouse 实验室环境、覆盖哪些页面？",
+      "archetype": "metric_validation",
+      "target_claim": "优化结账漏斗的 Core Web Vitals 指标",
+      "competency": "性能优化与指标口径",
       "difficulty": "mid",
+      "follow_up_probes": [
+        "做了哪三个最有效的改动？每个改动各贡献了多少改善？",
+        "P75 是多少？为什么 CWV 通常看 P75 而不是平均值？",
+        "优化后有没有指标回退过？怎么发现的？"
+      ],
       "scoring_criteria": [
-        "解释底层数据流问题，而非仅罗列库名",
-        "展现结构化排障与权衡思维"
+        "指标名称、前后数值、数据来源（RUM vs lab）口径清晰",
+        "改动与收益能对应起来",
+        "理解分位数统计的意义"
       ],
       "good_answer_signals": [
-        "讨论不变量与失败场景",
-        "能泛化到 React 之外"
+        "主动区分实验室数据与真实用户数据",
+        "说得出具体数值与监控工具"
       ],
       "red_flags": [
-        "只报库名不解释问题"
+        "说不出优化前后的数字",
+        "不知道数据从哪来"
       ]
     },
     {
-      "question": "请概念性逐段介绍你写过的 Python 脚本：输入、失败模式、如何让同事安全运行。",
-      "competency": "Python 深度",
+      "question": "请复原你那个批量重命名营销素材的 Python 脚本：整体结构是什么、用了哪些库、怎么处理重名冲突和中途失败？如果素材从几百个变成十万个，脚本要改哪里？",
+      "archetype": "experience_probe",
+      "target_claim": "编写小型 Python 脚本批量重命名营销素材",
+      "competency": "Python 基础与工程思维",
       "difficulty": "junior",
+      "follow_up_probes": [
+        "脚本跑到一半挂了，已改名的文件怎么办？当时考虑过吗？",
+        "现在让你给它加单元测试，你会先测哪三个函数？",
+        "除了这个脚本，你端到端写过的最复杂的 Python 程序是什么？"
+      ],
       "scoring_criteria": [
-        "理解错误处理与输入校验基础",
-        "能说明生产化还需什么"
+        "能复原脚本结构与所用库",
+        "对异常处理与幂等性有基本意识",
+        "诚实呈现 Python 能力边界"
       ],
       "good_answer_signals": [
-        "主动提到测试、日志或参数校验",
-        "诚实承认当前缺口"
+        "提到 dry-run、日志或回滚等防护",
+        "对规模化的改造方向合理（批处理、断点续跑）"
       ],
       "red_flags": [
-        "说不清自己脚本的失败行为"
+        "连脚本大致结构都说不出来",
+        "夸大为复杂工程但细节为空"
       ]
     },
     {
-      "question": "HTTP 请求从浏览器到后端的生命周期是什么？可能在哪些环节失败？",
-      "competency": "后端基础",
-      "difficulty": "junior",
-      "scoring_criteria": [
-        "概念性覆盖 DNS/TLS/路由/服务处理",
-        "指出至少三个失败点"
-      ],
-      "good_answer_signals": [
-        "提到超时与重试",
-        "理解状态码语义"
-      ],
-      "red_flags": [
-        "把后端当作黑盒"
-      ]
-    },
-    {
-      "question": "若要用 LLM API 总结商品评价供 UI 渲染，如何让输出足够可靠？",
-      "competency": "AI 工程潜力",
+      "question": "请画出你的作品集站点生成器的完整架构：输入是什么、生成流程分几步、输出怎么部署？挑其中最难的一步讲讲当时怎么实现的。",
+      "archetype": "experience_probe",
+      "target_claim": "使用 Next.js 与 Tailwind 构建的作品集站点生成器",
+      "competency": "项目复原与前端工程",
       "difficulty": "mid",
+      "follow_up_probes": [
+        "「生成器」是模板渲染还是代码生成？配置项长什么样？",
+        "这个项目有真实用户吗？收到过什么反馈？",
+        "如果重做一遍，你会改掉哪个设计？"
+      ],
       "scoring_criteria": [
-        "提出明确输出结构与校验",
-        "考虑失败与重试行为"
+        "架构与数据流能完整复原",
+        "对自己项目的局限有认知"
       ],
       "good_answer_signals": [
-        "提到 schema 校验或防御性解析",
-        "考虑 UI 降级状态"
+        "说得出配置 schema 或目录结构",
+        "有真实使用反馈或自我批判"
       ],
       "red_flags": [
-        "假设模型输出可直接渲染"
+        "项目描述与实际能复原的内容不符",
+        "回答全是框架名词没有实现细节"
       ]
     },
     {
-      "question": "你如何度量简历提到的 Core Web Vitals 改善？具体哪些改动推动了数字？",
-      "competency": "度量纪律",
+      "question": "你在商城项目里用 TypeScript 定义过组件与接口契约。类型在多人协作里防住了哪类真实 bug？给一个你遇到过的例子。后端用 Pydantic 做数据校验是类似思想：你觉得「编译期类型」和「运行时校验」各自能防什么、不能防什么？",
+      "archetype": "depth_probe",
+      "target_claim": "使用 TypeScript 与 Next.js 构建 React 商城功能",
+      "competency": "类型系统与契约思维",
       "difficulty": "mid",
+      "follow_up_probes": [
+        "接口返回与类型声明不一致时，TS 能发现吗？怎么兜底？",
+        "你们前后端接口契约怎么同步的？出过什么不同步的事故？",
+        "如果让你给一个 Python API 加输入校验，你会怎么入手？"
+      ],
       "scoring_criteria": [
-        "说出指标与度量工具",
-        "将改善归因到具体变更"
+        "理解静态类型与运行时校验的边界",
+        "有真实的契约不同步事故与处理经验"
       ],
       "good_answer_signals": [
-        "给出前后数值",
-        "理解实验室与现场数据差异"
+        "举出具体 bug 案例而非抽象优点",
+        "对运行时校验的必要性有认知"
       ],
       "red_flags": [
-        "无法将变更与度量结果关联"
+        "认为有了 TypeScript 就不需要运行时校验",
+        "举不出任何真实例子"
       ]
     },
     {
-      "question": "队列与同步 API 调用的区别是什么？慢 AI 任务何时选哪种？",
-      "competency": "系统思维",
-      "difficulty": "junior",
-      "scoring_criteria": [
-        "理解阻塞与后台处理",
-        "考虑长任务的用户反馈"
-      ],
-      "good_answer_signals": [
-        "提到状态轮询或通知",
-        "考虑重试与重复提交"
-      ],
-      "red_flags": [
-        "对长时任务无直觉"
-      ]
-    },
-    {
-      "question": "讲述一次在截止日期前学习全新技术的经历。你的学习循环是什么？",
-      "competency": "学习速度",
-      "difficulty": "junior",
-      "scoring_criteria": [
-        "具体学习策略与反馈闭环",
-        "有结果证据而非热情口号"
-      ],
-      "good_answer_signals": [
-        "做小项目验证理解",
-        "向资深工程师寻求 review"
-      ],
-      "red_flags": [
-        "只看教程无产出"
-      ]
-    },
-    {
-      "question": "如何测试表单密集的结账流程？从单元到端到端描述各层。",
-      "competency": "测试实践",
+      "question": "讲一次你在明途电商遇到的最严重的线上问题：现象是什么、怎么发现的、定位过程走了哪些弯路、根因是什么、修复后怎么验证的？",
+      "archetype": "failure_review",
+      "target_claim": "使用 TypeScript 与 Next.js 构建 React 商城功能",
+      "competency": "故障定位与复盘",
       "difficulty": "mid",
+      "follow_up_probes": [
+        "这个问题为什么测试没拦住？之后流程改了什么？",
+        "当时你个人负责到哪一步，哪些是别人处理的？",
+        "如果再来一次，最早能在哪个环节发现它？"
+      ],
       "scoring_criteria": [
-        "区分测试层次与目的",
-        "考虑 flaky 测试成本"
+        "故障叙事完整且有自己的具体参与",
+        "有流程或工具层面的改进动作"
       ],
       "good_answer_signals": [
-        "提到契约或集成边界",
-        "按风险优先级排序"
+        "说得出报错信息、监控图或排查命令",
+        "坦承弯路与他人贡献"
       ],
       "red_flags": [
-        "认为手工 QA 足够"
+        "声称没遇到过严重问题",
+        "复盘只有结论没有过程"
       ]
     },
     {
-      "question": "你目前在 Python 后端学什么？用它们实际构建了什么？",
-      "competency": "成长轨迹",
-      "difficulty": "junior",
-      "scoring_criteria": [
-        "具体、可验证的当前学习产物",
-        "对本岗位有现实自我评估"
-      ],
-      "good_answer_signals": [
-        "有可展示的仓库或脚本",
-        "说出具体下一步里程碑"
-      ],
-      "red_flags": [
-        "学习声称无产物支撑"
-      ]
-    },
-    {
-      "question": "若录用你做 AI 工具前端而非本岗位，如何让 LLM 筛选 UI 对招聘方可信？",
-      "competency": "产品感",
+      "question": "现场设计题：给你一个两周的任务——做一个内部小工具，把上传的合同 PDF 转成结构化字段（甲方、金额、期限）供运营核对。你会怎么拆这两周？前端你很熟，后端和 LLM 部分你打算怎么设计、哪些地方会先求助？",
+      "archetype": "scenario_design",
+      "target_claim": "",
+      "competency": "模糊需求拆解与全栈落地",
       "difficulty": "mid",
+      "follow_up_probes": [
+        "抽取错了运营怎么发现、怎么纠正？这个闭环你怎么设计？",
+        "第一版你会先支持几种合同模板？为什么？",
+        "怎么知道这个工具上线后「做对了」？定什么指标？"
+      ],
       "scoring_criteria": [
-        "关注证据、不确定性与人工覆盖",
-        "考虑失败与加载状态"
+        "能把模糊需求收窄成两周可交付的 MVP",
+        "对自己不熟的后端/LLM 部分有合理的方案与求助路径",
+        "有人工核对兜底的产品意识"
       ],
       "good_answer_signals": [
-        "展示分数背后的证据",
-        "提到人工覆盖与审计轨迹"
+        "主动定义输入输出与验收标准",
+        "诚实标注自己需要支援的环节"
       ],
       "red_flags": [
-        "只讨论视觉样式"
+        "只设计了前端界面，回避后端与数据流",
+        "认为 LLM 输出可以直接信任不需要核对"
+      ]
+    },
+    {
+      "question": "这个岗位要求扎实的 Python 后端能力，而你的主战场是 React 前端、Python 仅有脚本经验。请你自评：哪些前端工程经验能迁移到后端 AI 工程（举两个具体例子）？最大的三个缺口是什么？「业余时间在学习 Python」目前学到哪一步了？",
+      "archetype": "jd_fit",
+      "target_claim": "对 AI 产品感兴趣，业余时间在学习 Python",
+      "competency": "岗位匹配与自我认知",
+      "difficulty": "junior",
+      "follow_up_probes": [
+        "最近一个月写过的 Python 代码是什么？多少行、解决什么问题？",
+        "如果第一个月安排你给 FastAPI 服务写两个接口加测试，你打算怎么上手？",
+        "为什么想从前端转后端 AI？想清楚要放弃什么了吗？"
+      ],
+      "scoring_criteria": [
+        "迁移能力举例具体（工程化、调试、契约意识）",
+        "缺口认知与岗位要求一致",
+        "学习声明有可验证的产出"
+      ],
+      "good_answer_signals": [
+        "拿得出最近的 Python 产出物",
+        "对转型成本有清醒认知"
+      ],
+      "red_flags": [
+        "学习停留在「看了教程」",
+        "认为前端经验可以无缝替代后端经验"
+      ]
+    },
+    {
+      "question": "你优化 Core Web Vitals 时肯定做过「测量→改动→验证」的循环。LLM 应用的质量优化也是同样的循环，但输出是不确定的。你觉得这套方法论哪些能直接套用？输出不确定带来的最大不同是什么、你会怎么应对？",
+      "archetype": "jd_fit",
+      "target_claim": "优化结账漏斗的 Core Web Vitals 指标",
+      "competency": "方法论迁移与评估意识",
+      "difficulty": "mid",
+      "follow_up_probes": [
+        "性能优化有 P75 这种统计口径，LLM 输出质量你会怎么定义可统计的指标？",
+        "同一输入跑两次结果不一样，怎么做回归测试？",
+        "如果质量提升但延迟翻倍，你怎么决策？"
+      ],
+      "scoring_criteria": [
+        "能把测量驱动的方法论迁移到不确定输出场景",
+        "对评估集与统计口径有初步设想"
+      ],
+      "good_answer_signals": [
+        "提出用评估集+多次采样代替单次断言",
+        "意识到质量指标需要明确定义"
+      ],
+      "red_flags": [
+        "认为 LLM 质量只能靠人肉感觉",
+        "完全没有评估概念"
       ]
     }
   ],
   "follow_ups": [
     {
       "question": "除重命名素材外，你端到端写过的最复杂 Python 程序是什么？",
-      "ambiguity": "仅有 trivial 脚本证据，真实 Python 深度未知。",
-      "what_to_listen_for": "超越单文件脚本：模块、测试、错误处理。",
+      "ambiguity": "Python 经验仅有小脚本佐证，深度未知。",
+      "what_to_listen_for": "真实的程序结构描述；只有教程练习则经验有限。",
       "evidence": [
         {
           "source_type": "resume",
@@ -175,8 +211,8 @@
     },
     {
       "question": "「业余时间在学习 Python」本月具体包含什么？",
-      "ambiguity": "学习声称无课程、项目或产物佐证。",
-      "what_to_listen_for": "具体材料、节奏与产出物。",
+      "ambiguity": "学习声明无产出物佐证。",
+      "what_to_listen_for": "具体的项目、代码量或课程进度，可交叉验证。",
       "evidence": [
         {
           "source_type": "resume",
@@ -186,8 +222,8 @@
     },
     {
       "question": "哪项 Core Web Vitals 指标改善了多少？在哪些页面？",
-      "ambiguity": "声称改善但无数字或范围。",
-      "what_to_listen_for": "真实指标名与幅度；未知时诚实说明。",
+      "ambiguity": "优化声明缺少指标名称与量化结果。",
+      "what_to_listen_for": "指标、数值、数据来源三要素齐全。",
       "evidence": [
         {
           "source_type": "resume",

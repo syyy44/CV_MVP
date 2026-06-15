@@ -14,7 +14,7 @@ export function Progress({ value, className }: ProgressProps) {
       aria-valuemax={100}
       aria-valuenow={Math.round(pct)}
       className={cn(
-        "h-2 w-full overflow-hidden rounded-full bg-secondary",
+        "h-2 w-full overflow-hidden rounded-full bg-muted",
         className,
       )}
     >

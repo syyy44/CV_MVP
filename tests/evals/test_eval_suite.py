@@ -10,6 +10,7 @@ EXPECTED_CHECKS = {
     "demo_dossier_count",
     "demo_expected_outcomes",
     "demo_question_minimums",
+    "demo_deep_question_quality",
     "demo_evidence_minimums",
     "demo_ledger_density",
     "demo_audit_export",
@@ -18,6 +19,8 @@ EXPECTED_CHECKS = {
     "injection_no_instruction_echo",
     "proxy_score_delta",
     "proxy_no_protected_terms",
+    "grounding_claims_aligned",
+    "grounding_catches_fabricated_number",
     "jd_protected_requirement_excluded",
 }
 

@@ -345,6 +345,14 @@ def question_needs_target_claim(index: int, archetype: str) -> str:
     )
 
 
+def anchor_claim_not_covered(claim: str) -> str:
+    excerpt = claim if len(claim) <= 60 else f"{claim[:60]}…"
+    return (
+        f"高优先级声明「{excerpt}」没有被任何 questions.target_claim 覆盖；"
+        "needs_probing/suspicious 声明必须至少对应一道面试题。"
+    )
+
+
 def no_json_in_output() -> str:
     return "模型输出中未找到 JSON 对象"
 

@@ -5,7 +5,14 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Fira Sans", "ui-sans-serif", "system-ui", "sans-serif"],
+        sans: [
+          "Plus Jakarta Sans",
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "sans-serif",
+        ],
         mono: ["Fira Code", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       colors: {
@@ -51,6 +58,15 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        xs: "0 1px 2px 0 rgb(15 23 42 / 0.04)",
+        sm: "0 1px 2px 0 rgb(15 23 42 / 0.05)",
+        DEFAULT:
+          "0 1px 3px 0 rgb(15 23 42 / 0.06), 0 1px 2px -1px rgb(15 23 42 / 0.04)",
+        md: "0 6px 16px -6px rgb(15 23 42 / 0.10), 0 2px 6px -2px rgb(15 23 42 / 0.06)",
+        lg: "0 14px 32px -10px rgb(15 23 42 / 0.14), 0 4px 10px -4px rgb(15 23 42 / 0.07)",
+        xl: "0 28px 56px -16px rgb(15 23 42 / 0.20), 0 8px 18px -8px rgb(15 23 42 / 0.10)",
       },
       keyframes: {
         "accordion-down": {

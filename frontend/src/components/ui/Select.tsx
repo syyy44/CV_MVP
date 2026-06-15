@@ -14,14 +14,14 @@ export const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm transition-colors hover:border-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:truncate",
+      "flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs transition-colors hover:border-primary/50 focus:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring/40 data-[state=open]:border-primary [&[data-state=open]>svg]:rotate-180 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:truncate",
       className,
     )}
     {...props}
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="size-4 opacity-60" />
+      <ChevronDown className="size-4 text-muted-foreground transition-transform duration-200" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
@@ -36,7 +36,7 @@ export const SelectContent = React.forwardRef<
       ref={ref}
       position={position}
       className={cn(
-        "relative z-50 max-h-80 min-w-[12rem] overflow-hidden rounded-md border border-border bg-card text-card-foreground shadow-lg data-[state=open]:animate-fade-in",
+        "relative z-50 max-h-80 min-w-[12rem] overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-md data-[state=open]:animate-fade-in",
         position === "popper" && "translate-y-1",
         className,
       )}
@@ -57,7 +57,7 @@ export const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-3 text-sm outline-none transition-colors data-[highlighted]:bg-secondary data-[highlighted]:text-foreground",
+      "relative flex w-full cursor-pointer select-none items-center rounded-md py-1.5 pl-8 pr-3 text-sm outline-none transition-colors data-[highlighted]:bg-accent data-[highlighted]:text-foreground data-[state=checked]:font-medium data-[state=checked]:text-primary",
       className,
     )}
     {...props}

@@ -1,4 +1,4 @@
-// zh-CN copy, ported 1:1 from ui/strings.py and app/locale/zh_CN.py.
+// zh-CN product copy shared by the React views.
 // Icons are intentionally NOT embedded here (emoji-free UI); semantic SVG icons
 // are rendered by components instead.
 
@@ -30,7 +30,7 @@ export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   expert: "专家",
 };
 
-// 深度面试题型（v7 prompt 方法论：经历真/知识真懂/真会解决问题/JD 匹配）。
+// 深度面试题型（与 GENERATE_INTERVIEW_PACK prompt 的 archetype contract 对齐）。
 export const ARCHETYPE_LABELS: Record<QuestionArchetype, string> = {
   experience_probe: "经历复原",
   metric_validation: "口径核查",
@@ -59,7 +59,7 @@ export const S = {
   apiUnreachable: (url: string) =>
     `无法连接 API（${url}），请先运行 make demo 启动服务。`,
   replayMode: "回放模式 — 使用内置演示数据，无需 LLM 密钥。",
-  liveMode: "实时模式 — OpenAI 兼容端点（默认 Qwen qwen-plus）。",
+  liveMode: "实时模式 — OpenAI 兼容端点（当前演示环境使用 DeepSeek v4 Pro）。",
 
   sidebarDemoHeader: "一键演示",
   loadDemoButton: "加载演示案例",
@@ -86,7 +86,7 @@ export const S = {
   historyResumeCount: (count: number) => `${count} 份简历`,
   historyTopCandidate: (name: string, score: number) => `${name} · ${score} 分`,
 
-  emptyRun: "点击「加载演示案例」体验一键演示，或上传 JD 与简历进行实时筛选。",
+  emptyRun: "上传 JD 与简历进行实时筛选，或使用本地测试简历快速验证流程。",
 
   runBadgeReplay: "回放",
   runBadgeLive: "实时",
@@ -163,7 +163,7 @@ export const S = {
 
   // 必备要求覆盖（UX-014：用 display_label，不暴露 MH 编号）。
   requirementCoverageTitle: "必备要求覆盖",
-  requirementCoverageHint: "点击任一必备项展开 JD 要求、简历引用与判断原因",
+  requirementCoverageHint: "点击任一必备项展开 JD 要求、满足时的简历引用与判断原因",
   reqMet: "满足",
   reqUnmet: "未满足",
 

@@ -4,31 +4,38 @@
 
 @layer base {
   :root {
-    /* Data-Dense Dashboard, dark slate (ui-ux-pro-max recommendation) */
-    --background: 222 47% 4%; /* #020617 slate-950 */
-    --foreground: 210 40% 98%; /* #F8FAFC slate-50 */
-    --card: 222 44% 8%; /* ~#0B1220 */
-    --card-foreground: 210 40% 98%;
-    --muted: 217 33% 14%;
-    --muted-foreground: 215 20% 65%; /* slate-400-ish, AA on dark */
-    --secondary: 217 33% 17%; /* #1E293B slate-800 */
-    --secondary-foreground: 210 40% 96%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
-    --primary: 142 71% 45%; /* #22C55E green-500 */
-    --primary-foreground: 222 47% 6%;
-    --border: 215 28% 20%;
-    --input: 215 28% 22%;
-    --ring: 142 71% 45%;
+    /* Light, professional B2B surface — white canvas, restrained blue accent. */
+    --background: 210 40% 98%; /* #F8FAFC slate-50, page canvas */
+    --foreground: 222 47% 11%; /* #0F172A slate-900, primary text */
 
-    --proceed: 142 71% 45%; /* green */
-    --proceed-foreground: 142 80% 90%;
-    --hold: 38 92% 50%; /* amber */
-    --hold-foreground: 38 95% 92%;
-    --reject: 0 72% 51%; /* red */
-    --reject-foreground: 0 90% 94%;
+    --card: 0 0% 100%; /* #FFFFFF, elevated surfaces */
+    --card-foreground: 222 47% 11%;
 
-    --radius: 0.625rem;
+    --muted: 210 40% 96.5%; /* #F1F5F9 slate-100, subtle fills */
+    --muted-foreground: 215 19% 42%; /* ~slate-600, secondary text (AA on white) */
+
+    --secondary: 210 40% 96.5%; /* slate-100, neutral chips / soft buttons */
+    --secondary-foreground: 222 47% 14%;
+
+    --accent: 214 32% 91%; /* #E2E8F0 slate-200, neutral hover target */
+    --accent-foreground: 222 47% 14%;
+
+    --primary: 221 83% 53%; /* #2563EB blue-600, key actions & accent */
+    --primary-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%; /* #E2E8F0 slate-200 */
+    --input: 215 25% 85%; /* slightly stronger field edge */
+    --ring: 221 83% 53%; /* blue focus ring */
+
+    /* Semantic status — tuned for AA contrast on white, low saturation. */
+    --proceed: 142 64% 31%; /* green-700 */
+    --proceed-foreground: 0 0% 100%;
+    --hold: 27 84% 38%; /* amber-700 */
+    --hold-foreground: 0 0% 100%;
+    --reject: 0 72% 45%; /* red-600/700 */
+    --reject-foreground: 0 0% 100%;
+
+    --radius: 0.75rem;
   }
 
   * {
@@ -43,30 +50,33 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
-  /* Subtle grid backdrop for the dashboard surface */
-  body {
-    background-image:
-      radial-gradient(circle at 18% -10%, hsl(142 71% 45% / 0.07), transparent 42%),
-      radial-gradient(circle at 92% 0%, hsl(217 91% 60% / 0.06), transparent 38%);
-    background-attachment: fixed;
+  ::selection {
+    background-color: hsl(var(--primary) / 0.16);
   }
 
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-secondary;
+    @apply rounded-full;
+    background-color: hsl(215 16% 78%);
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted;
+    background-color: hsl(215 16% 66%);
   }
 
   :focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+    @apply outline-none ring-2 ring-ring/70 ring-offset-2 ring-offset-background;
   }
 }
 

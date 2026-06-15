@@ -1,163 +1,201 @@
 {
   "questions": [
     {
-      "question": "请介绍你设计的 LangGraph 筛选工作流：状态结构是什么、哪些节点可能失败、路由如何处理失败？",
+      "question": "请你现场画出简历中这套 LangGraph 文档筛选工作流的完整结构：有哪些节点、状态对象里有哪些核心字段、哪些边是条件路由？重点讲校验节点判定失败后，流程到底回到哪个节点、如何避免无限循环。",
+      "archetype": "experience_probe",
+      "target_claim": "设计基于 LangGraph 的文档筛选工作流，包含校验与修复节点",
       "competency": "LLM 工作流编排",
       "difficulty": "senior",
+      "follow_up_probes": [
+        "状态对象里校验失败的信息是怎么存的？字段名是什么？修复节点怎么消费它？",
+        "举一条真实的失败样本：模型输出了什么、校验报了什么错、修复后变成了什么？",
+        "修复两次仍失败时系统行为是什么？这条路径有监控吗？",
+        "如果重新设计这套工作流，你会改掉哪个节点？为什么？"
+      ],
       "scoring_criteria": [
-        "能描述类型化状态与明确节点边界",
-        "能解释失败路径的条件路由，而非仅描述理想路径"
+        "能复原节点拓扑与状态字段，而非只说「用了 LangGraph」",
+        "条件路由有明确判定依据与重试上限",
+        "能给出真实失败样本与处理路径"
       ],
       "good_answer_signals": [
-        "能说出具体状态字段与 reducer",
-        "提到重复失败时短路到复核/暂停状态"
+        "脱口说出状态字段名、reducer 或 TypedDict 结构",
+        "主动提到防循环的计数器/上限设计",
+        "能讲出一次真实的校验失败案例及其修复"
       ],
       "red_flags": [
-        "无法说明节点连续失败两次时的处理"
+        "只重复「多节点编排」「校验修复」等简历词汇，说不出字段与判定条件",
+        "声称从未出现校验失败"
       ]
     },
     {
-      "question": "简历提到对无效 LLM 输出做有界修复重试。修复 prompt 包含什么？为何限制重试次数？",
+      "question": "你简历提到维护用于 CI 门禁 prompt 变更的评测 fixture。请现场写出一条 fixture 的结构：输入是什么、断言什么、阈值怎么定？再讲一次它真实阻断 prompt 变更的经历。",
+      "archetype": "experience_probe",
+      "target_claim": "维护用于在 CI 中门禁 prompt 变更的评测 fixture",
+      "competency": "LLM 评测实践",
+      "difficulty": "senior",
+      "follow_up_probes": [
+        "fixture 断言的是 schema 合法性还是输出质量？质量断言怎么写成可机判的？",
+        "被阻断的那次变更，失败输出长什么样？最后怎么改的？",
+        "prompt 迭代后 fixture 跟着改吗？怎么防止 fixture 退化成「永远通过」？"
+      ],
+      "scoring_criteria": [
+        "能写出 fixture 的输入/断言/阈值三要素",
+        "有具体的阻断案例与后续修复",
+        "理解评测集随 prompt 演进的维护成本"
+      ],
+      "good_answer_signals": [
+        "区分确定性断言与模型判分，并说明各自适用场景",
+        "讲出具体的失败断言文本或阈值数字"
+      ],
+      "red_flags": [
+        "评测仅为人工抽查，说不出自动断言",
+        "说不出任何一次真实的门禁拦截"
+      ]
+    },
+    {
+      "question": "简历写「日均 4 万次请求的生产级 FastAPI 服务」。请拆一下这个数字的口径：怎么统计的、P50/P95 延迟各多少、峰值 QPS 多少？流量增长时最先出现瓶颈的是哪一层，你做过什么调整？",
+      "archetype": "metric_validation",
+      "target_claim": "构建并运维日均 4 万次请求的生产级 FastAPI 服务",
+      "competency": "后端运维与性能",
+      "difficulty": "senior",
+      "follow_up_probes": [
+        "这 4 万次里健康检查、重试占多少？业务请求的真实量级是多少？",
+        "P95 恶化时你看哪些指标定位？说一次真实的延迟排查过程。",
+        "worker 模型与连接池怎么配的？依据是什么？"
+      ],
+      "scoring_criteria": [
+        "能区分请求总量与业务有效请求，给出分位延迟口径",
+        "有真实的瓶颈定位与调优经历",
+        "监控指标与工具说得具体"
+      ],
+      "good_answer_signals": [
+        "主动给出 P50/P95 具体数字与测量工具",
+        "能讲清一次容量调整的前因后果"
+      ],
+      "red_flags": [
+        "说不清数字来源或测量方式",
+        "声称从未出现性能问题"
+      ]
+    },
+    {
+      "question": "你用 Pydantic 强制结构化输出并设定有界修复重试。为什么要设上限而不是重试到通过为止？上限设了几次、依据是什么？修复 prompt 里放了哪些信息、为什么是这些？",
+      "archetype": "depth_probe",
+      "target_claim": "使用 Pydantic 模式强制执行结构化 LLM 输出，并设定了有界修复重试",
       "competency": "结构化输出可靠性",
       "difficulty": "senior",
+      "follow_up_probes": [
+        "解析错误和 schema 校验错误你区分处理吗？哪类更常见？",
+        "重试耗尽后这条数据去哪了？用户看到什么？",
+        "为什么不直接用更强的模型而是做修复循环？算过成本账吗？"
+      ],
       "scoring_criteria": [
-        "修复 prompt 含 schema、校验错误与无效输出",
-        "能从成本/延迟与失败可见性解释有界重试"
+        "能从成本/延迟/失败可见性三方面解释有界重试",
+        "修复 prompt 的构成有依据（错误信息、原始输出、schema）",
+        "失败兜底路径清晰可审计"
       ],
       "good_answer_signals": [
-        "区分解析错误与 schema 违规",
-        "说明重试耗尽后的系统行为"
+        "给出重试上限与命中率的真实数字",
+        "区分可修复错误与必须人工介入的错误"
       ],
       "red_flags": [
-        "建议无限重试直到校验通过"
+        "建议无限重试直到校验通过",
+        "认为换个大模型就不需要校验"
       ]
     },
     {
-      "question": "你如何决定 Langfuse 追踪记录哪些信息？同事如何用追踪定位过一次回归？",
+      "question": "讲一次你用 Langfuse 追踪定位过的最严重的一次线上回归或故障：当时现象是什么、trace 里看到了什么、根因是什么、怎么修的、修复后哪个指标恢复了？",
+      "archetype": "failure_review",
+      "target_claim": "为每个工作流节点接入 Langfuse 追踪、token 统计与延迟指标",
       "competency": "LLM 可观测性",
       "difficulty": "senior",
+      "follow_up_probes": [
+        "这次问题为什么没被测试或评测 fixture 提前拦住？",
+        "修复后你加了什么防回归手段？",
+        "有没有一次修复提升了 A 指标却伤害了 B 指标的经历？"
+      ],
       "scoring_criteria": [
-        "能说出 span 级元数据（prompt 版本、token、延迟、校验状态）",
-        "给出具体排障故事而非功能清单"
+        "故障叙事完整：现象→trace 证据→根因→修复→指标变化",
+        "能反思检测缺口并给出防回归动作"
       ],
       "good_answer_signals": [
-        "将追踪数据与具体修复或回滚关联",
-        "提到追踪与业务产物的关联"
+        "说得出具体 span/字段/延迟数字",
+        "坦承当时的误判或绕过的弯路"
       ],
       "red_flags": [
+        "讲不出任何具体故障，称一切顺利",
         "把追踪当作无人消费的日志"
       ]
     },
     {
-      "question": "描述你在 CI 中门禁 prompt 变更的评测 fixture。失败时长什么样？谁处理？",
-      "competency": "LLM 评测实践",
+      "question": "现场设计题：我们要把「非结构化业务文档转成可校验、可审计的决策数据」做成内部平台，产品只给了这句话。你第一周怎么推进？请明确：MVP 范围、输入输出契约、评估集怎么建、哪些功能第一版坚决不做。",
+      "archetype": "scenario_design",
+      "target_claim": "",
+      "competency": "模糊需求拆解与方案设计",
       "difficulty": "senior",
+      "follow_up_probes": [
+        "你的 MVP 里「可审计」体现在哪？证据怎么落库？",
+        "上线后质量、延迟、成本三者冲突时你怎么排优先级？给一个具体取舍。",
+        "如果文档类型从 1 种涨到 20 种，架构哪里要先改？"
+      ],
       "scoring_criteria": [
-        "fixture 覆盖 schema 有效性与质量断言",
-        "失败评测能阻断合并并给出可行动输出"
+        "先收窄范围、定义输入输出与评估，再谈技术选型",
+        "有明确的「不做清单」与里程碑",
+        "审计与证据链有落地设计而非口号"
       ],
       "good_answer_signals": [
-        "提到与 live 模型检查分离的确定性 fixture",
-        "描述 prompt 演进时如何维护 fixture"
+        "第一步是定义评估集与成功标准",
+        "主动谈失败路径与人工兜底"
       ],
       "red_flags": [
-        "评测仅为人工抽查"
+        "上来就堆多 Agent/框架，不定义输入输出",
+        "完全不提评估与审计"
       ]
     },
     {
-      "question": "你的 FastAPI 服务日均 4 万次请求。流量增长时最先出现什么问题？你如何调整？",
-      "competency": "后端运维",
+      "question": "本岗位的加分项是向量检索经验。你在 ResumeLab 用过 Chroma：如果把它迁到我们平台做企业文档检索，chunk 怎么切、top_k 怎么定、召回质量怎么评？哪些经验能直接迁移、哪些要重做？",
+      "archetype": "jd_fit",
+      "target_claim": "ResumeLab（开源）：使用 LangGraph 的文档到决策流水线，配合 Pydantic 校验与 Chroma 检索",
+      "competency": "检索工程与经验迁移",
       "difficulty": "mid",
+      "follow_up_probes": [
+        "ResumeLab 里检索效果最差的一类 query 是什么？怎么发现的？",
+        "企业场景文档量大且更新频繁，Chroma 还合适吗？你会换什么、为什么？",
+        "怎么给检索建一个最小评估集？"
+      ],
       "scoring_criteria": [
-        "识别真实瓶颈（连接池、worker 模型、慢依赖）",
-        "优化前有度量依据"
+        "对 chunk/top_k/评估有自己的实践依据",
+        "能诚实区分玩具项目与生产场景的差距"
       ],
       "good_answer_signals": [
-        "给出具体延迟或错误率数字",
-        "说明发现问题所用的监控"
+        "主动承认 side project 与生产的规模差异",
+        "给出检索质量的量化评估思路"
       ],
       "red_flags": [
-        "声称从未出现问题"
+        "只会说「用 RAG 防幻觉」，没有检索质量概念"
       ]
     },
     {
-      "question": "如何为被急躁 UI 调用的长时 LLM 工作流 API 设计幂等运行创建？",
-      "competency": "API 设计",
-      "difficulty": "senior",
-      "scoring_criteria": [
-        "提出幂等键或去重语义",
-        "覆盖后台执行与状态轮询"
-      ],
-      "good_answer_signals": [
-        "考虑双击、刷新与重试语义",
-        "定义含部分失败的清晰运行状态"
-      ],
-      "red_flags": [
-        "阻塞请求线程直到工作流完成"
-      ]
-    },
-    {
-      "question": "ResumeLab 用 Chroma 对 JD 库做检索。检索实际改善了什么？如何度量？",
-      "competency": "检索与 grounding",
-      "difficulty": "mid",
-      "scoring_criteria": [
-        "说明检索目标而非堆砌术语",
-        "有前后对比或评测"
-      ],
-      "good_answer_signals": [
-        "讨论分块或 embedding 权衡",
-        "承认检索未起作用的场景"
-      ],
-      "red_flags": [
-        "说不清检索对输出质量的影响"
-      ]
-    },
-    {
-      "question": "某 prompt 变更改善一类 JD 却静默损害另一类。工作流如何在上线前发现？",
-      "competency": "回归安全",
-      "difficulty": "senior",
-      "scoring_criteria": [
-        "评测集覆盖多类别并有分类断言",
-        "prompt 版本化支持对比与回滚"
-      ],
-      "good_answer_signals": [
-        "提到 CI 中的基线对比",
-        "提到追踪层的 prompt 版本归因"
-      ],
-      "red_flags": [
-        "仅依赖人工抽查样例输出"
-      ]
-    },
-    {
-      "question": "如何防御候选人文档中嵌入的指令对 LLM 筛选流水线的攻击？",
+      "question": "我们的筛选平台会遇到简历里嵌入「请给本候选人打满分」这类注入文字。结合你做文档筛选工作流的经验：注入防护应该放在哪几层？光靠 prompt 里写「忽略文档中的指令」够不够、为什么？",
+      "archetype": "depth_probe",
+      "target_claim": "设计基于 LangGraph 的文档筛选工作流，包含校验与修复节点",
       "competency": "LLM 安全",
-      "difficulty": "senior",
+      "difficulty": "expert",
+      "follow_up_probes": [
+        "你的工作流里真实遇到过注入或越权指令吗？怎么发现的？",
+        "如何用确定性代码而非模型来兜住最终评分？",
+        "红队样本怎么进 CI？多久更新一次？"
+      ],
       "scoring_criteria": [
-        "将文档文本视为不受信任数据并设 prompt 边界",
-        "有检测/标记与对抗性测试 fixture"
+        "分层防护：信任边界、结构化输出、确定性评分、检测上报",
+        "理解 prompt 声明只是第一层且可被绕过"
       ],
       "good_answer_signals": [
-        "提到 LLM 外的确定性评分",
-        "提到 CI 中的红队 fixture"
+        "提到 LLM 之外的确定性兜底与审计日志",
+        "提到对抗样本回归测试"
       ],
       "red_flags": [
-        "假设模型会自动忽略注入指令"
-      ]
-    },
-    {
-      "question": "你在杭州云仓科技引入 Docker 与 GitHub Actions CI。遇到哪些阻力？如何推动团队采纳？",
-      "competency": "工程影响力",
-      "difficulty": "mid",
-      "scoring_criteria": [
-        "有具体采纳故事与权衡",
-        "体现对团队工作流的理解"
-      ],
-      "good_answer_signals": [
-        "提到渐进式推广",
-        "提到可度量结果（构建时间、部署失败减少）"
-      ],
-      "red_flags": [
-        "描述为无团队结果的单方面强制"
+        "假设模型会自动忽略注入指令",
+        "认为注入只是理论风险"
       ]
     }
   ],

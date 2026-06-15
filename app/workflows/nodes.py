@@ -15,6 +15,7 @@ from app.core.errors import (
     DomainError,
     EvidenceMissingError,
     LLMRateLimitError,
+    LLMRefusalError,
     LLMTimeoutError,
     ParseFailedError,
     RepairExhaustedError,
@@ -147,7 +148,7 @@ def _halt(state: CandidateState, exc: Exception) -> dict:
         kind, attempts = "needs_review", exc.attempts - 1
     elif isinstance(exc, EvidenceMissingError):
         kind, attempts = "needs_review", state.get("repair_attempts", 0)
-    elif isinstance(exc, (LLMTimeoutError, LLMRateLimitError)):
+    elif isinstance(exc, (LLMTimeoutError, LLMRateLimitError, LLMRefusalError)):
         kind, attempts = "needs_review", state.get("repair_attempts", 0)
     elif isinstance(exc, DomainError):
         kind, attempts = "failed", state.get("repair_attempts", 0)

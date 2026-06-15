@@ -45,6 +45,7 @@ from app.workflows.grounding import (
     relevance,
     support_relevance_problems,
 )
+from app.workflows.requirement_refs import build_jd_evidence_refs
 from app.workflows.scoring import ScoreBreakdown, compute_score
 
 _BAND_RANGES = {
@@ -77,7 +78,7 @@ _NEGATIVE_REASON_MARKERS = (
     "弱",
 )
 
-# 深度面试题的题型配比下限（资深面试官方法论；与 GENERATE_INTERVIEW_PACK v7 一致）。
+# 深度面试题的题型配比下限（资深面试官方法论；与 GENERATE_INTERVIEW_PACK v8 一致）。
 _ARCHETYPE_MINIMUMS = {
     "experience_probe": 2,
     "metric_validation": 1,
@@ -111,7 +112,7 @@ def _requirement_label(text: str, limit: int = 28) -> str:
 
 
 def _requirement_results(
-    rubric: JobRubric, analysis: ScoreAnalysisDraft
+    rubric: JobRubric, analysis: ScoreAnalysisDraft, jd_doc: dict | None = None
 ) -> list[RequirementResult]:
     """Resolve each must-have into met/unmet using the model's missing list.
 
@@ -125,6 +126,9 @@ def _requirement_results(
             display_label=_requirement_label(req.text),
             met=req.id not in missing,
             weight=req.severity_penalty,
+            jd_evidence_refs=(
+                build_jd_evidence_refs(req.id, req.text, jd_doc) if jd_doc else []
+            ),
         )
         for req in rubric.must_have_requirements
     ]
@@ -423,6 +427,7 @@ def extract_profile(
             EXTRACT_CANDIDATE_PROFILE,
             CandidateProfileDraft,
             {
+                "current_date": ctx.evaluation_date,
                 "resume_document_id": resume_doc["document_id"],
                 "filename": resume_doc["filename"],
                 "resume_text": render_numbered_source(resume_doc["text"], "resume"),
@@ -610,7 +615,7 @@ def analyze_and_score(
         match_reasons=[reason.reason for reason in analysis.match_reasons],
         risk_flags=[flag.description for flag in analysis.risk_flags],
         evidence_refs=dedupe_spans(spans),
-        requirement_results=_requirement_results(rubric, analysis),
+        requirement_results=_requirement_results(rubric, analysis, jd_doc),
         claim_verifications=claim_verifications,
         injection_detected=any(
             flag.category == "prompt_injection" for flag in analysis.risk_flags
@@ -649,8 +654,21 @@ def analyze_and_score(
     return analysis, score, breakdown, meta
 
 
-def pack_quality_problems(questions: list[InterviewQuestion]) -> list[str]:
-    """Deterministic guardrails for the v7 deep-interview methodology.
+def _anchor_text_matches(anchor: str, claim: str) -> bool:
+    anchor_norm = "".join(anchor.split()).lower()
+    claim_norm = "".join(claim.split()).lower()
+    if not anchor_norm or not claim_norm:
+        return False
+    if anchor_norm in claim_norm or claim_norm in anchor_norm:
+        return True
+    return relevance(anchor, claim) >= 0.34
+
+
+def pack_quality_problems(
+    questions: list[InterviewQuestion],
+    required_claims: list[str] | None = None,
+) -> list[str]:
+    """Deterministic guardrails for the v8 deep-interview methodology.
 
     Enforces the archetype mix, the per-question probe chain, and claim
     anchoring so the pack cannot silently degrade into generic quiz questions.
@@ -670,6 +688,9 @@ def pack_quality_problems(questions: list[InterviewQuestion]) -> list[str]:
             )
         if question.archetype in _CLAIM_ANCHORED_ARCHETYPES and not question.target_claim.strip():
             problems.append(msg.question_needs_target_claim(index, question.archetype))
+    for claim in required_claims or []:
+        if not any(_anchor_text_matches(question.target_claim, claim) for question in questions):
+            problems.append(msg.anchor_claim_not_covered(claim))
     return problems
 
 
@@ -689,7 +710,12 @@ def generate_pack(
         def validate(d: InterviewPackDraft) -> list[str]:
             all_drafts = [e for fu in d.follow_ups for e in fu.evidence]
             _, problems = resolve_drafts(all_drafts, docs)
-            problems.extend(pack_quality_problems(d.questions))
+            high_priority_claims = [
+                cv.claim
+                for cv in analysis.claim_verifications
+                if cv.credibility in ("needs_probing", "suspicious")
+            ]
+            problems.extend(pack_quality_problems(d.questions, high_priority_claims))
             return problems
 
         return _traced_post_validate(ctx, draft, validate)
@@ -702,6 +728,7 @@ def generate_pack(
             GENERATE_INTERVIEW_PACK,
             InterviewPackDraft,
             {
+                "current_date": ctx.evaluation_date,
                 "rubric_json": rubric.model_dump_json(),
                 "profile_json": profile.model_dump_json(),
                 "analysis_json": json.dumps(
@@ -713,6 +740,17 @@ def generate_pack(
                         },
                         "claim_verifications": [
                             cv.model_dump(exclude={"evidence"})
+                            for cv in analysis.claim_verifications
+                        ],
+                        "anchor_claims": [
+                            {
+                                **cv.model_dump(),
+                                "priority": (
+                                    "high"
+                                    if cv.credibility in ("needs_probing", "suspicious")
+                                    else "normal"
+                                ),
+                            }
                             for cv in analysis.claim_verifications
                         ],
                         "missing_must_haves": [m.model_dump() for m in analysis.missing_must_haves],

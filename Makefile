@@ -1,7 +1,7 @@
 PY := .venv/bin/python
 PIP := .venv/bin/pip
 
-.PHONY: install doctor api ui ui-install ui-build dev demo test lint eval fixture-check docker-up
+.PHONY: install doctor api ui ui-install ui-build dev demo restart test lint eval fixture-check docker-up
 
 install:
 	python3 -m venv .venv
@@ -33,6 +33,10 @@ dev:
 # Replay mode: deterministic demo, no API key required
 demo:
 	bash scripts/run_stack.sh replay
+
+# Stop :8000 + :5173, then start the stack again (default: replay)
+restart:
+	bash scripts/restart_stack.sh replay
 
 test:
 	$(PY) -m pytest

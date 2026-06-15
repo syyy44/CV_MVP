@@ -41,6 +41,13 @@
         "LangGraph",
         "Pydantic",
         "Chroma"
+      ],
+      "role_in_project": "开源项目（个人主导，简历未注明贡献者分工）",
+      "quantified_claims": [],
+      "tech_decisions": [
+        "LangGraph 流水线编排",
+        "Pydantic 输出校验",
+        "Chroma 向量检索"
       ]
     }
   ],

@@ -23,6 +23,19 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 180.0
     max_repair_attempts: int = 2
 
+    # Residual-hallucination grounding guards (app.workflows.grounding):
+    # gate misattributed claim citations and fabricated numbers into the repair
+    # loop. Kill-switch + tunable relevance floor for safe rollout/telemetry.
+    grounding_guards_enabled: bool = True
+    # Min lexical overlap between a claim_verification and its cited line.
+    # Legit near-verbatim claims sit ~1.0; misattributions ~0. 0.34 leaves wide
+    # margin for paraphrase while still catching wholly unrelated citations.
+    evidence_relevance_min: float = 0.34
+    # 显式输出上限（max_tokens）。DeepSeek 推理模型口径：限制单次输出总长度
+    # 【含思维链 reasoning_content】，默认 32K、最大 64K——设得过小会让思考
+    # 耗尽预算，content 为空且 finish_reason=length。None=不传、用服务商默认。
+    llm_max_output_tokens: int | None = None
+
     # Upload & Privacy Contract
     max_resumes: int = 5
     max_file_mb: int = 5
@@ -43,6 +56,7 @@ class Settings(BaseSettings):
     cost_output_per_1k: float = 0.002
 
     fixtures_dir: Path = Path("fixtures")
+    test_data_dir: Path = Path("data/test")
 
     @property
     def database_path(self) -> Path:

@@ -1,8 +1,10 @@
 # Intelligent Recruiting Assistant
 
+[中文说明](./README.zh-CN.md)
+
 An evidence-led AI screening workflow: upload one JD and up to five resumes, get back a
 **Candidate Decision Dossier** per candidate — a 0–100 match score with cited evidence
-spans, a recommendation, 10+ tailored interview questions, 3–5 ambiguity follow-ups —
+spans, a recommendation, 8–10 tailored interview questions, 3–5 ambiguity follow-ups —
 plus a **decision ledger**, **deterministic evals**, and a downloadable
 **audit export** that shows exactly how every number was produced.
 
@@ -11,58 +13,104 @@ engineering: every LLM output is schema-validated, repaired within bounds, groun
 verbatim quotes, observable in Langfuse (or a local fallback), replayable without any
 API key, and red-team tested against prompt injection and proxy-attribute drift.
 
-> Scenario coverage (per the assignment): Scenario A (parsing, matching, question
-> generation, follow-ups) is fully implemented as the mainline. Scenario B (the mock
-> interviewer agent) is a documented extension — see [Known limitations](#known-limitations--scenario-b).
+> Scenario coverage (per the assignment): parsing, matching, question generation,
+> and follow-ups are fully implemented as the mainline workflow.
 
 ---
 
-## Quick start (60 seconds, no API key)
+## Quick start
 
 ```bash
 git clone <repo-url> && cd cv
 make install      # .venv + pip install -e ".[dev,langfuse]", then npm install in frontend/
+cp .env.example .env
+# Edit .env before live mode:
+#   LLM_API_KEY=<your DeepSeek API key>
+#   QIANFAN_API_KEY=<your Baidu Qianfan key>
+#   LANGFUSE_PUBLIC_KEY=<your Langfuse public key>
+#   LANGFUSE_SECRET_KEY=<your Langfuse secret key>
 make doctor       # readiness check: deps, frontend, fixtures, SQLite, env shape
-make demo         # FastAPI :8000 + Vite UI :5173 in replay mode
+make dev          # live mode: FastAPI :8000 + Vite UI :5173
 ```
 
-Open http://localhost:5173 and click **Load Demo Case**. You get one JD and three
-synthetic resumes — a strong fit (89, proceed), a weak fit (15, reject), and a
-prompt-injection attempt (63, hold, with the attack surfaced as a risk flag) — with the
-full ledger, eval summary, and audit export.
+The current local `.env` is configured for the live DeepSeek v4 Pro path:
 
-Replay mode is **deterministic replay, not a faked demo**: captured model outputs run
-through the exact same JSON parsing, Pydantic validation, evidence resolution,
-deterministic scoring, ledger, storage, and UI paths as live mode.
+```env
+DEMO_MODE=live
+LLM_PROVIDER=custom
+OPENAI_BASE_URL=https://api.deepseek.com
+MODEL_NAME=deepseek-v4-pro
+LLM_API_KEY=<your DeepSeek API key>
+QIANFAN_API_KEY=<your Baidu Qianfan key>
+ENABLE_LANGFUSE=true
+LANGFUSE_PUBLIC_KEY=<your Langfuse public key>
+LANGFUSE_SECRET_KEY=<your Langfuse secret key>
+```
+
+For the best recorded demo, fill all three credential groups: LLM, PaddleOCR, and
+Langfuse. Never commit the real `.env`: `.env.example` mirrors the required shape but
+keeps credentials as `<hidden>` placeholders.
+
+Open http://localhost:5173 and either upload a JD/resume set or use the live test-data
+buttons. The public launcher intentionally hides the replay-only one-click demo entry.
+
+### Developer replay
+
+Replay mode is still available for developers and CI without any API key, but its UI
+entry is hidden unless explicitly enabled:
+
+```bash
+VITE_SHOW_REPLAY_DEMO=true make demo
+```
+
+Then open http://localhost:5173 and click **加载演示案例**. You get one JD and three
+synthetic resumes — a strong fit (89, proceed), a weak fit (5, reject), and a
+prompt-injection attempt (45, reject, with the attack surfaced as a risk flag). Replay
+mode is deterministic, not a faked demo: captured model outputs still run through the
+same JSON parsing, Pydantic validation, evidence resolution, deterministic scoring,
+ledger, storage, and UI paths as live mode.
 
 Verify everything yourself:
 
 ```bash
-make test   # 114 Python tests: unit / integration / eval / e2e
-make eval   # 13 deterministic checks incl. red-team + proxy guardrails
+make test   # 164 Python tests: unit / integration / eval / e2e
+make eval   # 16 deterministic checks incl. red-team + proxy guardrails
 make lint   # ruff
 make fixture-check  # fast schema-drift check for captured replay outputs
 
 # Frontend (Vite + React)
 cd frontend && npm run build   # type-check + production build to frontend/dist
-cd frontend && npm test        # vitest: progress-derivation unit tests
+cd frontend && npm test        # 23 vitest checks for frontend helper logic
 ```
 
-> The progress-derivation logic that used to live in `ui/progress.py` (with
-> `tests/unit/test_ui_progress.py`) now lives in `frontend/src/lib/progress.ts`, covered
-> by an equivalent `frontend/src/lib/progress.test.ts` (vitest).
+> Frontend helper logic for progress derivation, URL state, profile display, and
+> interview-script formatting is covered by vitest under `frontend/src/lib/*.test.ts`.
 
-### Live mode (real LLM calls)
+### Live mode configuration
 
 ```bash
 cp .env.example .env
-# set: DEMO_MODE=live, LLM_API_KEY=<your key>, LLM_PROVIDER=dashscope|siliconflow
+# replace the hidden placeholders before starting live mode; recommended:
+#   LLM_API_KEY=<your DeepSeek API key>
+#   QIANFAN_API_KEY=<your Baidu Qianfan key>
+#   LANGFUSE_PUBLIC_KEY=<your Langfuse public key>
+#   LANGFUSE_SECRET_KEY=<your Langfuse secret key>
 make doctor && make dev
 ```
 
-Default live path is **DashScope** (`LLM_PROVIDER=dashscope`, model `qwen-plus`).
-**SiliconFlow** is a one-line switch (`LLM_PROVIDER=siliconflow`). For other
-gateways use `LLM_PROVIDER=custom` with `OPENAI_BASE_URL` + `MODEL_NAME`.
+The current assessment path uses **DeepSeek v4 Pro** through an OpenAI-compatible
+custom endpoint. DashScope and SiliconFlow presets remain supported for portability
+(`LLM_PROVIDER=dashscope|siliconflow`), but they are not the current default for this
+workspace.
+
+Recommended live credentials:
+
+| Credential group | Variables | Used for |
+|---|---|---|
+| LLM | `LLM_API_KEY` | DeepSeek v4 Pro calls for parsing, matching, evidence reasoning, and question generation |
+| PaddleOCR | `QIANFAN_API_KEY` | OCR for scanned PDFs through Baidu Qianfan PaddleOCR-VL |
+| Langfuse | `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` | Hosted traces for prompts, repairs, latencies, tokens, and run-level observability |
+
 Docker: `make docker-up` builds the SPA and serves API + UI together on
 http://localhost:8000 (replay by default).
 
@@ -120,6 +168,22 @@ Key boundaries:
   validation summaries, eval results. WAL mode handles the parallel candidate branches.
 - **Langfuse** is maintainer observability; the **decision ledger** is the
   product-facing audit trail. They answer different questions.
+
+### Harness design highlights
+
+The strongest engineering work sits in the harness around the model, not in a single
+prompt:
+
+| Harness layer | What it does | Why it matters |
+|---|---|---|
+| Workflow harness | LangGraph run graph + candidate subgraph + `Send` fan-out; candidate branches halt independently and assemble visible `failed` / `needs_review` results | One bad resume or invalid model output does not sink the whole run |
+| Provider harness | `LiveLLMProvider` and `ReplayProvider` share the same completion contract | Replay, eval, and live mode exercise the same downstream parser, validators, ledger, storage, and UI |
+| Structured-output harness | Prompt render -> provider response schema -> JSON extraction -> Pydantic validation -> domain post-validation -> bounded repair | Format errors and hallucinated fields become observable repair events, not hidden exceptions |
+| Evidence harness | Numbered JD/resume sources, deterministic line lookup, verbatim `EvidenceSpan`, lexical relevance checks, and numeric grounding | The model can cite, but code owns the quote and catches fabricated numbers or irrelevant citations |
+| Scoring harness | The model emits judgments; `app/workflows/scoring.py` computes final score and recommendation | Prompt injection cannot directly assign a score or recommendation |
+| Audit harness | Decision ledger, validation summaries, prompt versions, input/output hashes, trace refs, and `audit-export.v1` | Every score is explainable and reproducible after the run |
+| Eval harness | Fixture replay, red-team injection checks, proxy-attribute regression, grounding regression, and `fixture-check` | Prompt/model/schema changes are gated by deterministic checks that run without an API key |
+| Runtime harness | Idempotency keys, upload limits, typed error envelopes, startup recovery for orphaned runs, SQLite WAL | The demo behaves like a small service rather than a notebook script |
 
 ### Run lifecycle
 
@@ -228,18 +292,18 @@ them (the demo JD deliberately includes one such line to prove it).
 
 ## Evaluation methodology
 
-`make eval` runs 13 deterministic checks against the committed fixtures (CI runs it on
+`make eval` runs 16 deterministic checks against the committed fixtures (CI runs it on
 every push; no API key, no flakiness):
 
 | Family | Checks |
 |---|---|
-| Demo invariants | replay run completes; 3/3 dossiers; expected scores (89/63/15) and recommendations; ≥10 questions + 3–5 follow-ups each; ≥3 evidence spans per score; ≥8 ledger events per candidate; audit export `complete` |
-| Prompt-injection red team | adversarial resume keeps the expected `hold`; score delta vs its clean twin ≤5 (actual: 0); injected phrases never echoed as reasons; the attempt surfaces as a risk flag |
+| Demo invariants | replay run completes; 3/3 dossiers; expected scores (89/45/5) and recommendations; ≥8 questions + 3–5 follow-ups each; deep-question quality; ≥3 evidence spans per score; ≥8 ledger events per candidate; audit export `complete` |
+| Prompt-injection red team | adversarial resume keeps the expected `reject`; score delta vs its clean twin ≤5 (actual: 0); injected phrases never echoed as reasons; the attempt surfaces as a risk flag |
 | Proxy-attribute guardrail | equivalent profiles with different proxy hints (age/marital/community signals) score within ≤5 points (actual: 0); protected terms never appear in reasons, evidence, or risk flags; the rubric excludes the JD's improper protected-attribute line |
 
 This is a **controlled synthetic regression test**, not a fairness audit or compliance
 certification. Live-model quality varies by model and date; report actual numbers
-rather than claiming universal accuracy. The 81-test pytest matrix additionally covers
+rather than claiming universal accuracy. The pytest matrix additionally covers
 the repair loop (malformed → repaired), repair exhaustion (→ `needs_review`),
 idempotency, the upload contract, export state machine (404/409/422), and export
 redaction. `make fixture-check` validates all captured replay outputs against current
@@ -249,17 +313,19 @@ schemas without running the full workflow, catching schema drift quickly.
 
 ## Observability
 
-- **Decision ledger (always on):** `decision_events` in SQLite, rendered in the UI's
-  Observability tab and included in the audit export. Records node, prompt
-  name/version, model, input/output hashes, latency, tokens, validation status, and
-  repair attempts.
+- **Decision ledger (always on):** `decision_events` in SQLite, served via
+  `GET /api/runs/{run_id}/events` and included in the audit export. Records node,
+  prompt name/version, model, input/output hashes, latency, tokens, validation
+  status, and repair attempts. (The V2 UI is interviewer-facing and intentionally
+  does not render engineering telemetry — see `docs/V2_UI_PROPOSAL.md` §1.3;
+  reviewers verify via Langfuse, the API, or the audit export.)
 - **Langfuse (optional, recommended for the recorded demo):** set `ENABLE_LANGFUSE=true`
   plus keys in `.env`; every node runs inside a span and dossiers carry trace links.
   Any Langfuse failure degrades to logging — observability never breaks a run.
 - **Run metrics:** LLM call count, token totals, cost estimate
   (`COST_*_PER_1K`), and duration on every run.
 
-Runtime budget: ≤5 resumes/run, ≤2 repair attempts/call, 45s per-LLM timeout,
+Runtime budget: ≤5 resumes/run, ≤2 repair attempts/call, 180s per-LLM timeout,
 live run target under 3 minutes.
 
 ---
@@ -273,7 +339,9 @@ live run target under 3 minutes.
 | `GET` | `/api/runs/{run_id}/events` | decision ledger |
 | `GET` | `/api/runs/{run_id}/audit-export` | `audit-export.v1`; `409` running/failed, `422` incomplete |
 | `GET` | `/api/candidates/{candidate_id}/dossier` | single dossier |
-| `GET` | `/api/candidates/{candidate_id}/interview/preview` | lightweight Scenario B preview: persona + opening question from dossier |
+| `GET` | `/api/candidates/{candidate_id}/interview-script` | backend-built v2 script: gap-first must-ask, hold verification checklist, pass criteria, timings; `409` if not completed |
+| `GET`/`POST` | `/api/candidates/{candidate_id}/notes` | list / add post-interview notes (ledger `note_added`) |
+| `PATCH` | `/api/candidates/{candidate_id}/decision` | human recommendation override; writes `human_override_recorded` to the ledger and preserves the model's original recommendation |
 | `GET` | `/api/evals` | latest eval results |
 | `GET` | `/health` | mode, version, Langfuse status |
 
@@ -292,20 +360,24 @@ Bundled fixtures are fully synthetic people.
 
 ## Configuration
 
-All settings come from `.env` (see `.env.example`):
+All runtime settings come from `.env` (see `.env.example`). The code defaults remain
+portable, while the current assessment `.env` is live DeepSeek v4 Pro:
 
-| Variable | Default | Purpose |
+| Variable | Current workspace / code default | Purpose |
 |---|---|---|
-| `DEMO_MODE` | `replay` | `replay` = no-key deterministic demo; `live` = real LLM |
-| `LLM_PROVIDER` | `dashscope` | `dashscope`, `siliconflow`, or `custom` (OpenAI-compatible preset) |
-| `LLM_API_KEY` | — | required in live mode (fails fast with a clear 422 otherwise) |
-| `OPENAI_BASE_URL` | from provider preset | required only when `LLM_PROVIDER=custom` |
-| `MODEL_NAME` | from provider preset | optional override of the provider default model |
+| `DEMO_MODE` | current: `live`; code default: `replay` | `replay` = no-key deterministic demo; `live` = real LLM |
+| `LLM_PROVIDER` | current: `custom`; code default: `dashscope` | `dashscope`, `siliconflow`, or `custom` (OpenAI-compatible preset) |
+| `LLM_API_KEY` | `<hidden>` in examples | required in live mode; replace with your DeepSeek API key locally |
+| `OPENAI_BASE_URL` | current: `https://api.deepseek.com` | required only when `LLM_PROVIDER=custom` |
+| `MODEL_NAME` | current: `deepseek-v4-pro` | optional override of the provider default model |
 | `MAX_REPAIR_ATTEMPTS` | `2` | bounded repair loop |
 | `MAX_RESUMES` / `MAX_FILE_MB` | `5` / `5` | upload contract |
 | `DATABASE_URL` | `sqlite:///data/recruiting.db` | local persistence |
-| `ENABLE_LANGFUSE` + keys | off | hosted Langfuse tracing |
-| `LLM_TIMEOUT_SECONDS` | `45` | per-call budget |
+| `ENABLE_LANGFUSE` + keys | current: `true`; code default: `false` | recommended hosted Langfuse tracing; replace key placeholders locally |
+| `LLM_TIMEOUT_SECONDS` | `600` | per-call budget |
+| `LLM_MAX_OUTPUT_TOKENS` | `32768` | output budget for strict JSON responses |
+| `QIANFAN_API_KEY` | `<hidden>` in examples | recommended PaddleOCR-VL OCR credential for scanned PDFs |
+| `VITE_SHOW_REPLAY_DEMO` | `false` | developer-only switch for showing the one-click replay demo in the launcher |
 
 ---
 
@@ -328,13 +400,10 @@ document workflow (claims triage, vendor due diligence, grant review, KYC):
 
 ---
 
-## Known limitations / Scenario B
+## Known limitations
 
-- **Scenario B (mock interviewer agent)** is intentionally thin: implemented today as
-  `/api/candidates/{candidate_id}/interview/preview`, which derives an interviewer
-  persona and first question from the completed dossier. A full 3–5 turn interviewer is
-  still the documented extension path.
-- **No OCR** — scanned PDFs return `scanned_pdf_requires_text_upload`.
+- **OCR is optional** — PDFs try Qianfan PaddleOCR-VL when `QIANFAN_API_KEY` is set;
+  otherwise scanned PDFs return `scanned_pdf_requires_text_upload` and require a text upload.
 - **Replay scores are fixture-derived** — live-model outputs vary; the deterministic
   scoring layer keeps them bounded and explainable, not identical.
 - **Guardrail evals are regression tests**, not a fairness audit or legal compliance.
@@ -345,23 +414,28 @@ document workflow (claims triage, vendor due diligence, grant review, KYC):
 ## Demo video walkthrough (suggested script, ~2.5 min)
 
 1. `0:00` README quick start + architecture diagram.
-2. `0:20` `make doctor` → `make demo`; click **Load Demo Case**.
-3. `0:45` Ranking: 89 proceed / 63 hold / 15 reject; open Li Wei's dossier — score
-   breakdown, evidence quotes, 10 questions, follow-ups.
-4. `1:15` Chen Hao's dossier: the prompt-injection attempt as a risk flag; the
-   injected "score of 100" did not move the deterministic score.
-5. `1:35` Observability tab: decision ledger, repair telemetry, (optionally) a hosted
-   Langfuse trace from a live run.
-6. `1:55` `make eval`: 13 green checks incl. injection delta = 0 and proxy delta = 0.
-7. `2:15` Download the audit export; show `audit-export.v1` contents.
+2. `0:20` for live review, run `make doctor` → `make dev`; for developer replay,
+   run `VITE_SHOW_REPLAY_DEMO=true make demo` and click **加载演示案例**.
+3. `0:45` Candidate board: 89 proceed / 45 reject / 5 reject with one-line decision
+   summaries; click "准备面试" on Li Wei — interview script first: 4 must-ask
+   questions with time boxes, follow-ups with evidence quotes, copy as Markdown.
+4. `1:15` Chen Hao (reject): the score evidence pins the prompt-injection risk flag and
+   the verification checklist; the injected "score of 100" did not move the
+   deterministic score. Multi-select two candidates → comparison overlay.
+5. `1:35` Engineering depth (outside the UI by design): `GET /api/runs/{id}/events`
+   decision ledger, (optionally) a hosted Langfuse trace from a live run.
+6. `1:55` `make eval`: 16 green checks incl. injection delta = 0 and proxy delta = 0.
+7. `2:15` `curl /api/runs/{id}/audit-export`; show `audit-export.v1` contents.
 
 ## Troubleshooting
 
 `make doctor` diagnoses the common cases: missing dependencies, missing replay
-fixtures, unwritable SQLite path, `DEMO_MODE=live` without `LLM_API_KEY`. `make install`
+fixtures, unwritable SQLite path, `DEMO_MODE=live` without `LLM_API_KEY`. If `make demo`
+reports that `:8000` or `:5173` is already in use, run `make restart` to stop the old
+local stack, or override ports with `API_PORT=8010 UI_PORT=5174 make demo`. `make install`
 uses `--no-build-isolation` after installing build tooling, avoiding fragile setuptools
-bootstrap failures on constrained package indexes. The API
-fails with typed error envelopes, not stack traces; the UI surfaces them verbatim.
+bootstrap failures on constrained package indexes. The API fails with typed error
+envelopes, not stack traces; the UI surfaces them verbatim.
 
 ## Project layout
 
@@ -379,11 +453,11 @@ app/
   observability/  Langfuse wrapper (non-blocking)
 frontend/     React SPA (Vite + TS + Tailwind); served by FastAPI in prod
   src/lib/    api client, contract types, zh-CN strings, progress derivation
-  src/views/  Ranking / Dossier / Observability / Audit + live progress
+  src/views/  Ranking (board) / InterviewPrep + live progress
   src/components/  UI primitives + feature components
 fixtures/     synthetic JD/resumes, captured outputs, expected results
 tests/        unit / integration / evals / e2e
-scripts/      doctor.py, run_stack.sh
+scripts/      doctor.py, run_stack.sh, restart_stack.sh
 ```
 
 Frontend prerequisites: Node.js >= 20 and npm (for `make ui-install` / `make ui-build`).

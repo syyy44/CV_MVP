@@ -69,14 +69,17 @@ def main() -> int:
     text, pages = extract_text_from_response(payload)
     m = _metrics(text)
 
-    print(f"\n=== PaddleOCR-VL ===")
+    print("\n=== PaddleOCR-VL ===")
     for k, v in m.items():
         print(f"  {k}: {v}")
     print(f"  pages: {len(pages)}")
     print(f"\n--- 预览 (前 1200 字) ---\n{text[:1200]}")
 
     if args.save_json:
-        args.save_json.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        args.save_json.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
         print(f"\n已保存 JSON: {args.save_json}")
     if args.save_md:
         md_pages = extract_raw_markdown_pages(payload)
@@ -95,7 +98,9 @@ def main() -> int:
         print(f"\n=== pypdf (status={status}) ===")
         for k, v in _metrics(pypdf_text).items():
             print(f"  {k}: {v}")
-        print(f"\n归一化后长度: paddle={len(normalize_text(text))} pypdf={len(normalize_text(pypdf_text))}")
+        paddle_len = len(normalize_text(text))
+        pypdf_len = len(normalize_text(pypdf_text))
+        print(f"\n归一化后长度: paddle={paddle_len} pypdf={pypdf_len}")
 
     return 0
 

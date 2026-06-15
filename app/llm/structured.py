@@ -85,14 +85,23 @@ def _numbered_line_count(numbered_source: str) -> int:
     return numbered_source.count("\n") + 1
 
 
+# Problems that are best fixed by re-reading the numbered source: invalid line
+# numbers, misattributed (irrelevant) citations, and ungrounded numbers.
+_REANCHOR_MARKERS = ("行号无效", "几乎无关", "未在简历原文中出现", "均未出现")
+
+
 def _evidence_repair_source_block(variables: dict, problems: list[str]) -> str:
     """Re-anchor repair on valid line numbers when a cited line_no was invalid.
 
     The numbered source already lives in the first user message, so it is NOT
     duplicated here. We only restate the valid `[R*]`/`[J*]` ranges to steer the
-    model back to a real line number — keeping the repair prompt small.
+    model back to a real line number — keeping the repair prompt small. Also
+    fires for misattributed citations and ungrounded numbers, which are likewise
+    fixed by returning to the numbered source.
     """
-    if not any("行号无效" in problem for problem in problems):
+    if not any(
+        marker in problem for problem in problems for marker in _REANCHOR_MARKERS
+    ):
         return ""
     hints: list[str] = []
     if resume_text := variables.get("resume_text"):
@@ -108,7 +117,7 @@ def _evidence_repair_source_block(variables: dict, problems: list[str]) -> str:
     return (
         "证据修复：请回到**本对话第一条用户消息**中的「带编号原文」，"
         "把每条 evidence 的 line_no 改成其中真实存在的编号；"
-        "evidence 只填数字，不要复制或改写文本。\n"
+        "line_no 只填数字，不要复制或改写文本。\n"
         + "\n".join(hints)
     )
 
@@ -188,7 +197,9 @@ def generate_structured(
             problems: list[str] = []
             parsed: TModel | None = None
             try:
-                payload = json.loads(extract_json_block(raw_text))
+                # strict=False：容忍字符串值中的裸换行/控制字符（json_object 模式
+                # 下长中文输出的常见缺陷，否则整次尝试因一个字符报废）。
+                payload = json.loads(extract_json_block(raw_text), strict=False)
                 parsed = schema.model_validate(payload)
             except StructuredOutputParseError as exc:
                 problems = [exc.message]

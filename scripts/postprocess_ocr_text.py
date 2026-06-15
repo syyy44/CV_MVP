@@ -19,12 +19,15 @@ from app.workflows.ocr_postprocess import postprocess_ocr_text
 
 def metrics(text: str) -> dict:
     paras = [p for p in re.split(r"\n\s*\n", text) if p.strip()]
+    duplicate_paras = {
+        re.sub(r"\s+", "", paragraph) for paragraph in paras if len(paragraph) > 40
+    }
     return {
         "chars": len(text),
         "lines": len(text.splitlines()),
         "paragraphs": len(paras),
         "cn_mid_breaks": len(re.findall(r"(?<=[\u4e00-\u9fff])\n(?=[\u4e00-\u9fff])", text)),
-        "duplicate_paras_est": len(paras) - len({re.sub(r'\s+', '', p) for p in paras if len(p) > 40}),
+        "duplicate_paras_est": len(paras) - len(duplicate_paras),
     }
 
 

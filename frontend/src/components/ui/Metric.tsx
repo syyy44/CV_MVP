@@ -16,12 +16,14 @@ export function Metric({ label, value, hint, icon, className, mono }: MetricProp
   return (
     <Card className={cn("p-4", className)}>
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">{label}</span>
-        {icon ? <span className="text-muted-foreground">{icon}</span> : null}
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </span>
+        {icon ? <span className="text-muted-foreground/70">{icon}</span> : null}
       </div>
       <div
         className={cn(
-          "mt-2 text-2xl font-semibold tracking-tight tabular-nums",
+          "mt-2 text-2xl font-semibold tracking-tight tabular-nums text-foreground",
           mono && "font-mono text-xl",
         )}
       >

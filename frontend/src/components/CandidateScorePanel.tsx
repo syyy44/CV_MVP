@@ -168,21 +168,21 @@ function EvidenceQuote({
 
 function RequirementEvidenceItem({
   req,
-  jdRefs,
   resumeRefs,
   penalties,
   expanded,
   onToggle,
 }: {
   req: RequirementResult;
-  jdRefs: EvidenceSpan[];
   resumeRefs: EvidenceSpan[];
   penalties: ScorePenaltyExplanation[];
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const visibleResumeRefs = resumeRefs.slice(0, 2);
-  const visibleJdRefs = jdRefs.slice(0, 1);
+  const shouldShowResumeEvidence = req.met;
+  const jdRefs = req.jd_evidence_refs ?? [];
+  const visibleJdRefs = jdRefs.slice(0, 2);
+  const visibleResumeRefs = shouldShowResumeEvidence ? resumeRefs.slice(0, 2) : [];
   const status = requirementEvidenceStatus(req, resumeRefs, penalties);
   const tone = requirementToneClasses(status.tone);
 
@@ -232,14 +232,16 @@ function RequirementEvidenceItem({
           <span className="mt-1 block text-xs text-muted-foreground">{status.reason}</span>
           <span className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
             <span className="rounded-full bg-muted px-2 py-1">JD 引用 {jdRefs.length}</span>
-            <span
-              className={cn(
-                "rounded-full px-2 py-1",
-                status.resumeGap ? "bg-hold/10 text-hold" : "bg-muted",
-              )}
-            >
-              简历证据 {resumeRefs.length}
-            </span>
+            {shouldShowResumeEvidence ? (
+              <span
+                className={cn(
+                  "rounded-full px-2 py-1",
+                  status.resumeGap ? "bg-hold/10 text-hold" : "bg-muted",
+                )}
+              >
+                简历证据 {resumeRefs.length}
+              </span>
+            ) : null}
             <span className="font-mono text-primary/80">{req.requirement_id}</span>
           </span>
         </span>
@@ -270,7 +272,7 @@ function RequirementEvidenceItem({
             <span className="font-medium text-foreground">判断原因：</span>
             {status.reason}
           </div>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <div className={cn("mt-3 grid gap-2", shouldShowResumeEvidence && "sm:grid-cols-2")}>
             <div className="space-y-2">
               <p className="text-[11px] font-medium text-muted-foreground">JD 要求</p>
               {visibleJdRefs.length > 0 ? (
@@ -293,24 +295,24 @@ function RequirementEvidenceItem({
                 </div>
               )}
             </div>
-            <div className="space-y-2">
-              <p className="text-[11px] font-medium text-muted-foreground">简历证据</p>
-              {visibleResumeRefs.length > 0 ? (
-                visibleResumeRefs.map((span, index) => (
-                  <EvidenceQuote
-                    key={`${span.line_no}-resume-${index}`}
-                    span={span}
-                    tag="候选人简历"
-                  />
-                ))
-              ) : (
-                <div className="rounded-xl border border-dashed border-rose-200 bg-rose-50/40 px-3 py-2 text-xs leading-5 text-reject">
-                  {status.resumeGap
-                    ? "模型判定满足，但匹配依据中未绑定简历行引用。"
-                    : "未找到可验证的简历引用。"}
-                </div>
-              )}
-            </div>
+            {shouldShowResumeEvidence ? (
+              <div className="space-y-2">
+                <p className="text-[11px] font-medium text-muted-foreground">简历证据</p>
+                {visibleResumeRefs.length > 0 ? (
+                  visibleResumeRefs.map((span, index) => (
+                    <EvidenceQuote
+                      key={`${span.line_no}-resume-${index}`}
+                      span={span}
+                      tag="候选人简历"
+                    />
+                  ))
+                ) : (
+                  <div className="rounded-xl border border-dashed border-hold/30 bg-hold/10 px-3 py-2 text-xs leading-5 text-hold">
+                    模型判定满足，但匹配依据中未绑定简历行引用。
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -815,11 +817,6 @@ function EvidenceSection({ dossier }: { dossier: DecisionDossier }) {
             </div>
             <ul className="grid gap-3">
               {score.requirement_results.map((req) => {
-                const jdRefs = evidenceForRequirement(
-                  score.evidence_refs,
-                  req.requirement_id,
-                  "jd",
-                );
                 const resumeRefs = evidenceForRequirement(
                   score.evidence_refs,
                   req.requirement_id,
@@ -829,7 +826,6 @@ function EvidenceSection({ dossier }: { dossier: DecisionDossier }) {
                   <RequirementEvidenceItem
                     key={req.requirement_id}
                     req={req}
-                    jdRefs={jdRefs}
                     resumeRefs={resumeRefs}
                     penalties={penalties}
                     expanded={expandedRequirementId === req.requirement_id}

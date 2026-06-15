@@ -10,10 +10,16 @@ def test_schema_version_recorded(app_env):
     assert row["version"] == SCHEMA_VERSION
 
 
-def test_startup_marks_orphaned_runs_failed(app_env):
+def test_startup_marks_stale_orphaned_runs_failed(app_env):
     repository.create_run("run-orphan-queued", "replay", None)
     repository.create_run("run-orphan-running", "replay", "running-key")
     repository.mark_run_started("run-orphan-running")
+    with connect() as conn:
+        conn.execute(
+            "UPDATE runs SET created_at = datetime('now', '-3 hours'),"
+            " started_at = datetime('now', '-3 hours')"
+            " WHERE run_id IN ('run-orphan-queued', 'run-orphan-running')"
+        )
 
     init_db()
 
@@ -24,3 +30,17 @@ def test_startup_marks_orphaned_runs_failed(app_env):
     assert "孤立运行" in queued.error
     assert running.status == "failed"
     assert "孤立运行" in running.error
+
+
+def test_startup_keeps_recent_active_runs(app_env):
+    repository.create_run("run-active-queued", "replay", None)
+    repository.create_run("run-active-running", "replay", "active-running-key")
+    repository.mark_run_started("run-active-running")
+
+    init_db()
+
+    queued = repository.get_run("run-active-queued")
+    running = repository.get_run("run-active-running")
+
+    assert queued.status == "queued"
+    assert running.status == "running"

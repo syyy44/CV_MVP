@@ -60,6 +60,25 @@ def test_requirement_results_carry_display_label(replay_run):
     assert all("requirement_id" in r and "met" in r for r in reqs)
 
 
+def test_requirement_results_carry_stable_jd_refs(replay_run):
+    _run_id, status = replay_run
+    completed = [
+        candidate
+        for candidate in status["candidates"]
+        if candidate["dossier"] and candidate["dossier"]["status"] == "completed"
+    ]
+    refs_by_requirement: dict[str, set[tuple[int, ...]]] = {}
+    for candidate in completed:
+        reqs = candidate["dossier"]["score"]["requirement_results"]
+        assert all("jd_evidence_refs" in req for req in reqs)
+        for req in reqs:
+            line_nos = tuple(ref["line_no"] for ref in req["jd_evidence_refs"])
+            refs_by_requirement.setdefault(req["requirement_id"], set()).add(line_nos)
+
+    assert any(lines for variants in refs_by_requirement.values() for lines in variants)
+    assert all(len(variants) == 1 for variants in refs_by_requirement.values())
+
+
 def test_notes_crud_and_ledger(replay_run, client):
     run_id, status = replay_run
     chen = _candidate(status, "陈浩")

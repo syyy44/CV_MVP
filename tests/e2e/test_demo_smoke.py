@@ -23,7 +23,7 @@ def test_demo_smoke_end_to_end(client):
     completed = [c for c in status["candidates"] if c["status"] == "completed"]
     assert len(completed) >= 3
     for candidate in completed:
-        assert len(candidate["dossier"]["questions"]) >= 10
+        assert len(candidate["dossier"]["questions"]) >= 8
         assert len(candidate["dossier"]["score"]["evidence_refs"]) >= 3
 
     export = client.get(f"/api/runs/{run_id}/audit-export")
