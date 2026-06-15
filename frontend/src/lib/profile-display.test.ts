@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  extractProfileOverview,
   formatEducationHeadline,
   groupProjectsByExperience,
   normalizeEducation,
@@ -53,6 +54,39 @@ const baseScore: CandidateScore = {
   ],
   injection_detected: false,
 };
+
+describe("extractProfileOverview", () => {
+  it("keeps only the overview before detailed highlights", () => {
+    const summary =
+      "候选人小宋，2026年计算机硕士应届，拥有4段AI核心业务实战经验。最突出的可验证亮点包括：" +
+      "1) 在头部互联网平台通过LoRA微调将准确率从65%提升至88%；" +
+      "2) 在自动驾驶企业利用Transformer融合多模态数据使mAP提升5.2%。" +
+      "待面试重点核实：1) 3.85/4.0的绩点精确口径；2) 多模态融合中Transformer的具体架构。";
+
+    expect(extractProfileOverview(summary)).toBe(
+      "候选人小宋，2026年计算机硕士应届，拥有4段AI核心业务实战经验。",
+    );
+  });
+
+  it("handles alternate highlight and verification markers", () => {
+    const summary =
+      "候选人小文，某985/211高校计算机本科在读，预计2026年毕业，兼具后端开发与算法研究多段实习经历。" +
+      "亮点包括：在自动驾驶独角兽实习期间，基于LoRA微调Llama-3，显存占用降低60%；" +
+      "在互联网大厂通过Redis与消息队列优化高并发秒杀接口，QPS提升3倍；" +
+      "带领团队完成AIGC营销实战，客流量提升50%。" +
+      "面试需核实：多项指标缺失基线数据（如Recall@5、准确率提升等），个人贡献与团队成果边界不清。";
+
+    expect(extractProfileOverview(summary)).toBe(
+      "候选人小文，某985/211高校计算机本科在读，预计2026年毕业，兼具后端开发与算法研究多段实习经历。",
+    );
+  });
+
+  it("returns plain summaries unchanged", () => {
+    expect(extractProfileOverview("高级后端工程师，拥有 6 年专业 Python 经验。")).toBe(
+      "高级后端工程师，拥有 6 年专业 Python 经验。",
+    );
+  });
+});
 
 describe("partitionSkillsForJd", () => {
   it("prioritizes JD-relevant skills and caps primary list", () => {

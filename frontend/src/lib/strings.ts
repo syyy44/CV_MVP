@@ -95,7 +95,7 @@ export const S = {
   progressParsingDocs: "正在解析上传文档…",
   progressRubric: "正在从职位描述提取评分标准…",
   progressLlmWait: (step: string) =>
-    `正在调用 LLM：${step}（通常需 30 秒–4 分钟）`,
+    `正在调用 LLM：${step}（通常需要 7 分钟）`,
   progressWaiting: (done: number, total: number) =>
     `已完成 ${done}/${total} 位候选人，继续处理下一位…`,
   progressAggregating: "所有候选人已处理，正在汇总结果…",

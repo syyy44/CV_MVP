@@ -8,6 +8,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/Collapsible";
 import {
+  extractProfileOverview,
   formatEducationHeadline,
   formatEducationPeriod,
   groupProjectsByExperience,
@@ -23,8 +24,21 @@ interface CandidateProfilePanelProps {
 
 function ProfileSectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/80">
       {children}
+    </div>
+  );
+}
+
+function ProfileSummaryBlock({ summary }: { summary: string }) {
+  const overview = React.useMemo(() => extractProfileOverview(summary), [summary]);
+
+  return (
+    <div className="border-b border-border/60 pb-4">
+      <ProfileSectionLabel>{S.profileSummary}</ProfileSectionLabel>
+      <p className="max-w-4xl text-sm leading-[1.75] text-foreground/80">
+        {overview}
+      </p>
     </div>
   );
 }
@@ -49,8 +63,8 @@ export function CandidateProfilePanel({ dossier }: CandidateProfilePanelProps) {
         <ChevronDown className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
       </CollapsibleTrigger>
       <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-        <div className="mt-2 space-y-4 rounded-md border border-border bg-card p-4 shadow-xs">
-          <p className="text-[15px] leading-relaxed text-foreground/90">{profile.summary}</p>
+        <div className="mt-2 space-y-5 rounded-lg border border-border/70 bg-card p-5 shadow-xs">
+          <ProfileSummaryBlock summary={profile.summary} />
           {education.length > 0 ? (
             <div>
               <ProfileSectionLabel>{S.profileEducation}</ProfileSectionLabel>

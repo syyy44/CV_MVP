@@ -282,3 +282,14 @@ export function formatEducationHeadline(edu: EducationItem): string {
   const parts = [edu.degree, edu.major].map((part) => part?.trim()).filter(Boolean);
   return parts.join(" · ");
 }
+
+const SUMMARY_DETAIL_MARKER_RE =
+  /(?:最突出的)?(?:可验证)?亮点(?:包括)?[：:]|核心亮点(?:包括)?[：:]|主要亮点(?:包括)?[：:]|待面试重点核实[：:]|面试需核实[：:]|待核实[：:]|需面试核实[：:]|最需要面试核实(?:的疑点)?(?:包括)?[：:]|面试重点核实[：:]/;
+
+export function extractProfileOverview(summary: string): string {
+  const text = summary.trim();
+  const markerIndex = text.search(SUMMARY_DETAIL_MARKER_RE);
+  const overview = (markerIndex >= 0 ? text.slice(0, markerIndex) : text).trim();
+
+  return overview || text;
+}
