@@ -4,7 +4,12 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-data/
+data/*
+!data/test/
+data/test/*
+!data/test/manifest.json
+!data/test/新媒体.txt
+!data/test/小*
 .env
 .pytest_cache/
 .ruff_cache/
