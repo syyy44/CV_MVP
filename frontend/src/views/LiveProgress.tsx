@@ -2,11 +2,13 @@ import { Activity, CheckCircle2, Clock, Hourglass, Loader2, XCircle } from "luci
 import * as React from "react";
 
 import { SectionTitle } from "@/components/SectionTitle";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Metric } from "@/components/ui/Metric";
 import { Progress } from "@/components/ui/Progress";
-import { useEvents, useRun } from "@/hooks/queries";
+import { useCancelRun, useEvents, useRun } from "@/hooks/queries";
+import { ApiError } from "@/lib/api";
 import {
   buildProgressSnapshot,
   type ActivityRow,
@@ -20,6 +22,7 @@ interface LiveProgressProps {
 export function LiveProgress({ runId }: LiveProgressProps) {
   const runQuery = useRun(runId);
   const eventsQuery = useEvents(runId, true);
+  const cancelRun = useCancelRun(runId);
   // Elapsed/idle time must tick every second. React Query only re-renders when
   // tracked result fields change; polling the same events payload does not.
   const [now, setNow] = React.useState(() => new Date());
@@ -47,6 +50,12 @@ export function LiveProgress({ runId }: LiveProgressProps) {
   });
   const minutes = Math.floor(snapshot.elapsed_s / 60);
   const seconds = Math.floor(snapshot.elapsed_s % 60);
+  const cancelError =
+    cancelRun.error instanceof ApiError
+      ? cancelRun.error.message
+      : cancelRun.error
+        ? String(cancelRun.error)
+        : null;
 
   const activityColumns: Column<ActivityRow>[] = [
     {
@@ -69,9 +78,29 @@ export function LiveProgress({ runId }: LiveProgressProps) {
     <div className="space-y-6">
       <Card>
         <CardContent className="space-y-4 pt-5">
-          <div className="flex items-center gap-2 text-base font-semibold">
-            <Loader2 className="size-4 animate-spin text-primary" />
-            {snapshot.headline}
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-base font-semibold">
+                <Loader2 className="size-4 animate-spin text-primary" />
+                {snapshot.headline}
+              </div>
+              <p className="text-xs text-muted-foreground">{S.stopRunHelp}</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => cancelRun.mutate()}
+              disabled={cancelRun.isPending}
+              className="border-reject/40 text-reject hover:bg-reject/10"
+            >
+              {cancelRun.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <XCircle className="size-4" />
+              )}
+              {cancelRun.isPending ? S.stoppingRun : S.stopRun}
+            </Button>
           </div>
           <Progress value={snapshot.progress} />
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -81,6 +110,11 @@ export function LiveProgress({ runId }: LiveProgressProps) {
           {snapshot.pending_llm && snapshot.idle_s >= 15 ? (
             <div className="rounded-md border border-hold/40 bg-hold/10 px-3 py-2 text-xs text-hold">
               {S.progressLlmIdle}
+            </div>
+          ) : null}
+          {cancelError ? (
+            <div className="rounded-md border border-reject/40 bg-reject/10 px-3 py-2 text-xs text-reject">
+              {cancelError}
             </div>
           ) : null}
         </CardContent>

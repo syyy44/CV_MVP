@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 
+from app.storage import repository
 from app.workflows.test_data import list_test_data_files
 
 
@@ -18,6 +19,40 @@ def test_idempotency_key_returns_existing_run(client):
         "/api/runs?mode=replay", files={"idempotency_key": (None, uuid.uuid4().hex)}
     )
     assert other.json()["run_id"] != first.json()["run_id"]
+
+
+def test_cancel_active_run(client):
+    repository.create_run("run-cancel", "live", None)
+    repository.mark_run_started("run-cancel")
+
+    response = client.post("/api/runs/run-cancel/cancel")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "cancelled"
+    status = client.get("/api/runs/run-cancel").json()
+    assert status["run"]["status"] == "cancelled"
+    assert "停止" in status["run"]["error"]
+
+
+def test_cancelled_run_is_not_overwritten_by_late_finish(client):
+    repository.create_run("run-cancel-race", "live", None)
+    repository.mark_run_started("run-cancel-race")
+    assert client.post("/api/runs/run-cancel-race/cancel").status_code == 200
+
+    repository.mark_run_finished("run-cancel-race", "completed")
+
+    run = repository.get_run("run-cancel-race")
+    assert run.status == "cancelled"
+
+
+def test_completed_run_cannot_be_cancelled(client):
+    repository.create_run("run-done", "replay", None)
+    repository.mark_run_finished("run-done", "completed")
+
+    response = client.post("/api/runs/run-done/cancel")
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "run_not_cancellable"
 
 
 def test_replay_mode_rejects_uploads(client):

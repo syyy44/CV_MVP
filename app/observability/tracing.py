@@ -198,6 +198,7 @@ class Tracer:
         if not self.enabled:
             yield _NoopObservation()
             return
+        yielded = False
         try:
             from langfuse import propagate_attributes
 
@@ -229,8 +230,12 @@ class Tracer:
                     except Exception as exc:
                         root.update(level="ERROR", status_message=str(exc))
                         raise
+                    finally:
+                        yielded = True
         except Exception as exc:
             log.warning("Langfuse run trace failed: %s", exc)
+            if yielded:
+                raise
             yield _NoopObservation()
 
     @contextmanager
@@ -249,6 +254,7 @@ class Tracer:
         tags = [f"candidate:{slug}"]
         if red_team:
             tags.append("red_team")
+        yielded = False
         try:
             from langfuse import propagate_attributes
 
@@ -259,9 +265,14 @@ class Tracer:
                     input={"run_id": run_id, "slug": slug, "mode": mode},
                 ) as span:
                     self._remember_trace_id(span)
-                    yield span
+                    try:
+                        yield span
+                    finally:
+                        yielded = True
         except Exception as exc:
             log.warning("Langfuse candidate scope failed: %s", exc)
+            if yielded:
+                raise
             yield _NoopObservation()
 
     @contextmanager

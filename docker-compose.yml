@@ -3,6 +3,8 @@ services:
     build: .
     environment:
       DEMO_MODE: ${DEMO_MODE:-replay}
+      DEFAULT_TEMPERATURE: ${DEFAULT_TEMPERATURE:-0}
+      ENABLE_GENERATION_CACHE: ${ENABLE_GENERATION_CACHE:-true}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_PROVIDER: ${LLM_PROVIDER:-dashscope}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}

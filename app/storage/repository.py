@@ -131,17 +131,46 @@ def list_runs(limit: int = 30) -> list[dict]:
 def mark_run_started(run_id: str) -> None:
     with connect() as conn:
         conn.execute(
-            "UPDATE runs SET status = 'running', started_at = ? WHERE run_id = ?",
+            "UPDATE runs SET status = 'running', started_at = ?"
+            " WHERE run_id = ? AND status != 'cancelled'",
             (_now(), run_id),
         )
 
 
 def mark_run_finished(run_id: str, status: str, error: str | None = None) -> None:
+    if status == "cancelled":
+        with connect() as conn:
+            conn.execute(
+                "UPDATE runs SET status = 'cancelled', finished_at = ?, error = ?"
+                " WHERE run_id = ?",
+                (_now(), error, run_id),
+            )
+        return
     with connect() as conn:
         conn.execute(
-            "UPDATE runs SET status = ?, finished_at = ?, error = ? WHERE run_id = ?",
+            "UPDATE runs SET status = ?, finished_at = ?, error = ?"
+            " WHERE run_id = ? AND status != 'cancelled'",
             (status, _now(), error, run_id),
         )
+
+
+def cancel_run(run_id: str) -> bool:
+    with connect() as conn:
+        cursor = conn.execute(
+            "UPDATE runs SET status = 'cancelled', finished_at = ?, error = ?"
+            " WHERE run_id = ? AND status IN ('queued', 'running')",
+            (_now(), "用户已停止运行", run_id),
+        )
+    return cursor.rowcount > 0
+
+
+def is_run_cancelled(run_id: str) -> bool:
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT status FROM runs WHERE run_id = ?",
+            (run_id,),
+        ).fetchone()
+    return row is not None and row["status"] == "cancelled"
 
 
 def set_run_metrics(run_id: str, metrics: RunMetrics) -> None:
@@ -624,6 +653,50 @@ def get_validation_summaries(run_id: str) -> list[ValidationSummary]:
         )
         for r in rows
     ]
+
+
+# ---- structured generation cache ------------------------------------------------------
+
+
+def get_structured_generation_cache(cache_key: str) -> dict | None:
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT output_text, model, output_hash FROM structured_generation_cache"
+            " WHERE cache_key = ?",
+            (cache_key,),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def save_structured_generation_cache(
+    *,
+    cache_key: str,
+    prompt_name: str,
+    prompt_version: str,
+    schema_name: str,
+    model: str,
+    input_hash: str,
+    output_hash: str,
+    output_text: str,
+) -> None:
+    with connect() as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO structured_generation_cache"
+            " (cache_key, prompt_name, prompt_version, schema_name, model,"
+            " input_hash, output_hash, output_text, created_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                cache_key,
+                prompt_name,
+                prompt_version,
+                schema_name,
+                model,
+                input_hash,
+                output_hash,
+                output_text,
+                _now(),
+            ),
+        )
 
 
 # ---- eval results ---------------------------------------------------------------------

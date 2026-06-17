@@ -11,7 +11,13 @@ export type ParseStatus =
   | "scanned_pdf_requires_text_upload"
   | "candidate_parse_failed";
 
-export type RunStatus = "queued" | "running" | "completed" | "needs_review" | "failed";
+export type RunStatus =
+  | "queued"
+  | "running"
+  | "completed"
+  | "needs_review"
+  | "failed"
+  | "cancelled";
 export type RunMode = "live" | "replay" | "eval";
 export type Recommendation = "proceed" | "hold" | "reject";
 export type SourceType = "jd" | "resume";

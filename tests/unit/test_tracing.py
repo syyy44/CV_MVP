@@ -3,6 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import pytest
 from app.core.config import Settings
 from app.observability.tracing import (
     Tracer,
@@ -157,6 +158,59 @@ def test_tracer_candidate_scope_and_score():
         trace_id="cand-trace",
         comment="completed",
     )
+
+
+def test_tracer_run_reraises_body_exception_when_langfuse_enabled():
+    """Body failures must propagate; a second yield after throw() causes RuntimeError."""
+    from app.observability import tracing as tracing_module
+
+    tracing_module._VERIFIED_CREDENTIALS.clear()
+    settings = Settings(
+        enable_langfuse=True,
+        langfuse_public_key="pk-test",
+        langfuse_secret_key="sk-test",
+    )
+    fake_root = SimpleNamespace(trace_id="trace-err", update=MagicMock())
+    fake_client = MagicMock()
+    fake_client.start_as_current_observation.return_value.__enter__.return_value = fake_root
+    fake_client.start_as_current_observation.return_value.__exit__.return_value = None
+
+    with patch.object(tracing_module, "_verify_credentials", return_value=True), patch(
+        "langfuse.Langfuse", return_value=fake_client
+    ), patch("langfuse.propagate_attributes") as propagate:
+        propagate.return_value.__enter__.return_value = None
+        propagate.return_value.__exit__.return_value = None
+        tracer = Tracer(settings)
+
+        with pytest.raises(ValueError, match="workflow failed"):
+            with tracer.run("run-err", "live"):
+                raise ValueError("workflow failed")
+
+    fake_root.update.assert_called_once()
+    assert fake_root.update.call_args.kwargs["level"] == "ERROR"
+
+
+def test_tracer_run_falls_back_to_noop_on_langfuse_setup_failure():
+    from app.observability import tracing as tracing_module
+
+    tracing_module._VERIFIED_CREDENTIALS.clear()
+    settings = Settings(
+        enable_langfuse=True,
+        langfuse_public_key="pk-test",
+        langfuse_secret_key="sk-test",
+    )
+    fake_client = MagicMock()
+    fake_client.start_as_current_observation.side_effect = RuntimeError("langfuse down")
+
+    with patch.object(tracing_module, "_verify_credentials", return_value=True), patch(
+        "langfuse.Langfuse", return_value=fake_client
+    ), patch("langfuse.propagate_attributes") as propagate:
+        propagate.return_value.__enter__.return_value = None
+        propagate.return_value.__exit__.return_value = None
+        tracer = Tracer(settings)
+
+        with tracer.run("run-setup-fail", "live") as obs:
+            assert obs.update(level="INFO") is obs
 
 
 def test_tracer_span_event():

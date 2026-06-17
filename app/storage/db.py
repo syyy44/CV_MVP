@@ -98,6 +98,18 @@ CREATE TABLE IF NOT EXISTS validation_summaries (
     created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS structured_generation_cache (
+    cache_key TEXT PRIMARY KEY,
+    prompt_name TEXT NOT NULL,
+    prompt_version TEXT NOT NULL,
+    schema_name TEXT NOT NULL,
+    model TEXT NOT NULL,
+    input_hash TEXT NOT NULL,
+    output_hash TEXT NOT NULL,
+    output_text TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS eval_results (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     run_id TEXT,
@@ -112,6 +124,8 @@ CREATE INDEX IF NOT EXISTS idx_events_run ON decision_events(run_id);
 CREATE INDEX IF NOT EXISTS idx_docs_run ON documents(run_id);
 CREATE INDEX IF NOT EXISTS idx_candidates_run ON candidate_results(run_id);
 CREATE INDEX IF NOT EXISTS idx_notes_candidate ON candidate_notes(candidate_id);
+CREATE INDEX IF NOT EXISTS idx_structured_generation_cache_input
+    ON structured_generation_cache(input_hash);
 """
 
 

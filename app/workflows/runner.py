@@ -12,6 +12,7 @@ from app.core.errors import (
     DomainError,
     MissingDocumentError,
     ReplayFixtureMissingError,
+    RunCancelledError,
     RunNotFoundError,
     TooManyResumesError,
 )
@@ -171,6 +172,8 @@ def create_run_from_uploads(
 def ingest_run_documents(run_id: str) -> None:
     tracer = _ingest_tracer()
     for doc in repository.get_documents(run_id):
+        if repository.is_run_cancelled(run_id):
+            raise RunCancelledError(msg.run_cancelled_by_user())
         if doc["parse_status"] != "pending_ingest":
             continue
         data = repository.get_document_source_bytes(doc["document_id"])
@@ -190,16 +193,33 @@ def ingest_run_documents(run_id: str) -> None:
 
 
 def process_run(run_id: str, *, eval_suite: str | None = None) -> None:
-    if repository.has_pending_documents(run_id):
-        try:
-            ingest_run_documents(run_id)
-        except Exception as exc:
-            log.exception("run %s document ingest failed", run_id)
+    try:
+        if repository.is_run_cancelled(run_id):
+            return
+        if repository.has_pending_documents(run_id):
+            try:
+                ingest_run_documents(run_id)
+            except RunCancelledError:
+                repository.mark_run_finished(
+                    run_id, "cancelled", error=msg.run_cancelled_by_user()
+                )
+                return
+            except Exception as exc:
+                log.exception("run %s document ingest failed", run_id)
+                repository.mark_run_finished(
+                    run_id, "failed", error=msg.unexpected_error(str(exc))
+                )
+                return
+        execute_run(run_id, eval_suite=eval_suite)
+    except RunCancelledError:
+        repository.mark_run_finished(run_id, "cancelled", error=msg.run_cancelled_by_user())
+    except Exception as exc:
+        log.exception("run %s process failed", run_id)
+        run = repository.get_run(run_id)
+        if run is not None and run.status in ("queued", "running"):
             repository.mark_run_finished(
                 run_id, "failed", error=msg.unexpected_error(str(exc))
             )
-            return
-    execute_run(run_id, eval_suite=eval_suite)
 
 
 def derive_run_status(results: list[CandidateRunResult]) -> str:
@@ -218,6 +238,8 @@ def execute_run(run_id: str, *, eval_suite: str | None = None) -> None:
     run = repository.get_run(run_id)
     if run is None:
         raise RunNotFoundError(msg.run_not_found(run_id))
+    if run.status == "cancelled":
+        return
 
     docs = repository.get_documents(run_id)
     jd_docs = [d for d in docs if d["source_type"] == "jd"]
@@ -243,8 +265,12 @@ def execute_run(run_id: str, *, eval_suite: str | None = None) -> None:
     )
 
     repository.mark_run_started(run_id)
+    if repository.is_run_cancelled(run_id):
+        return
     started = time.monotonic()
     try:
+        if repository.is_run_cancelled(run_id):
+            raise RunCancelledError(msg.run_cancelled_by_user())
         if not jd_docs:
             raise MissingDocumentError(msg.run_has_no_jd())
         provider_name = getattr(provider, "name", "unknown")
@@ -264,6 +290,8 @@ def execute_run(run_id: str, *, eval_suite: str | None = None) -> None:
                     "candidate_results": [],
                 }
             )
+            if repository.is_run_cancelled(run_id):
+                raise RunCancelledError(msg.run_cancelled_by_user())
             statuses = sorted({r.status for r in output.get("candidate_results", [])})
             metrics = ctx.metrics.to_run_metrics(settings, time.monotonic() - started)
             run_span.update(
@@ -278,6 +306,8 @@ def execute_run(run_id: str, *, eval_suite: str | None = None) -> None:
             )
         status = derive_run_status(output.get("candidate_results", []))
         repository.mark_run_finished(run_id, status)
+    except RunCancelledError:
+        repository.mark_run_finished(run_id, "cancelled", error=msg.run_cancelled_by_user())
     except DomainError as exc:
         log.error("run %s failed: %s", run_id, exc.message)
         repository.mark_run_finished(run_id, "failed", error=exc.message)

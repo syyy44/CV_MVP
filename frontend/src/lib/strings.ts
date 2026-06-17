@@ -53,6 +53,7 @@ export const RUN_STATUS_LABELS: Record<RunStatus, string> = {
   completed: "已完成",
   needs_review: "待人工复核",
   failed: "失败",
+  cancelled: "已停止",
 };
 
 export const S = {
@@ -118,8 +119,13 @@ export const S = {
   activityColEvent: "活动",
   activityColLatency: "延迟(ms)",
   runInProgressCaption: "后台运行写入决策事件时，本面板会持续更新。",
+  stopRun: "停止运行",
+  stoppingRun: "正在停止…",
+  stopRunHelp: "停止后不会继续处理剩余候选人；若当前 LLM 请求已发出，会在返回后退出。",
 
   runFailed: (detail: string) => `运行失败：${detail}`,
+  runCancelled: (detail?: string | null) =>
+    detail ? `运行已停止：${detail}` : "运行已停止。",
   unknownError: "未知错误",
 
   tabBoard: "候选看板",

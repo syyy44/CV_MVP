@@ -189,6 +189,18 @@ function RunView({
     );
   }
 
+  if (run.status === "cancelled") {
+    return (
+      <div className="space-y-4">
+        <RunHeader runId={runId} mode={run.mode} status={run.status} />
+        <div className="rounded-lg border border-muted bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          {S.runCancelled(run.error)}
+        </div>
+        <Ranking candidates={candidates} onSelect={onSelectCandidate} runId={runId} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <RunHeader runId={runId} mode={run.mode} status={run.status} />

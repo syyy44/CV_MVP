@@ -19,6 +19,7 @@ from app.core.errors import (
     LLMTimeoutError,
     ParseFailedError,
     RepairExhaustedError,
+    RunCancelledError,
 )
 from app.core.logging import get_logger
 from app.locale import zh_CN as msg
@@ -59,6 +60,7 @@ def _max_repair_attempts(summaries: list[ValidationSummary]) -> int:
 
 def ingest_node(state: RunGraphState) -> dict:
     ctx = state["ctx"]
+    _raise_if_cancelled(ctx)
     jd_doc = state["jd_doc"]
     failed_results: list[CandidateRunResult] = []
     parsed_resumes: list[dict] = []
@@ -114,11 +116,13 @@ def ingest_node(state: RunGraphState) -> dict:
 
 
 def extract_rubric_node(state: RunGraphState) -> dict:
+    _raise_if_cancelled(state["ctx"])
     rubric, _meta = steps.extract_rubric(state["ctx"], state["jd_doc"])
     return {"rubric": rubric}
 
 
 def aggregate_node(state: RunGraphState) -> dict:
+    _raise_if_cancelled(state["ctx"])
     results = state.get("candidate_results", [])
     status_breakdown: dict[str, int] = {}
     for result in results:
@@ -143,6 +147,11 @@ def aggregate_node(state: RunGraphState) -> dict:
 # ---- candidate subgraph nodes -----------------------------------------------------
 
 
+def _raise_if_cancelled(ctx) -> None:
+    if repository.is_run_cancelled(ctx.run_id):
+        raise RunCancelledError(msg.run_cancelled_by_user())
+
+
 def _halt(state: CandidateState, exc: Exception) -> dict:
     if isinstance(exc, RepairExhaustedError):
         kind, attempts = "needs_review", exc.attempts - 1
@@ -165,6 +174,7 @@ def _halt(state: CandidateState, exc: Exception) -> dict:
 
 
 def profile_node(state: CandidateState) -> dict:
+    _raise_if_cancelled(state["ctx"])
     try:
         profile, meta = steps.extract_profile(
             state["ctx"],
@@ -173,12 +183,15 @@ def profile_node(state: CandidateState) -> dict:
             state["jd_doc"],
             state["resume_doc"],
         )
+    except RunCancelledError:
+        raise
     except Exception as exc:
         return {**_halt(state, exc), "missing_fields": ["profile", "score", "questions"]}
     return {"profile": profile, "metas": [("profile", meta)]}
 
 
 def score_node(state: CandidateState) -> dict:
+    _raise_if_cancelled(state["ctx"])
     try:
         analysis, score, breakdown, meta = steps.analyze_and_score(
             state["ctx"],
@@ -189,6 +202,8 @@ def score_node(state: CandidateState) -> dict:
             state["jd_doc"],
             state["resume_doc"],
         )
+    except RunCancelledError:
+        raise
     except Exception as exc:
         return {**_halt(state, exc), "missing_fields": ["score", "questions"]}
     return {
@@ -200,6 +215,7 @@ def score_node(state: CandidateState) -> dict:
 
 
 def questions_node(state: CandidateState) -> dict:
+    _raise_if_cancelled(state["ctx"])
     try:
         questions, follow_ups, meta = steps.generate_pack(
             state["ctx"],
@@ -211,6 +227,8 @@ def questions_node(state: CandidateState) -> dict:
             state["jd_doc"],
             state["resume_doc"],
         )
+    except RunCancelledError:
+        raise
     except Exception as exc:
         return {**_halt(state, exc), "missing_fields": ["questions"]}
     return {
@@ -263,6 +281,7 @@ def _assemble_output(state: CandidateState, result: CandidateRunResult) -> dict:
 
 def assemble_node(state: CandidateState) -> dict:
     ctx = state["ctx"]
+    _raise_if_cancelled(ctx)
     candidate_id = state["candidate_id"]
     summaries = _summaries_from_metas(state)
     candidate_trace_id = state.get("candidate_trace_id")

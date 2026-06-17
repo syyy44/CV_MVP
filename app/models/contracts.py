@@ -25,7 +25,7 @@ ParseStatus = Literal[
     "candidate_parse_failed",
 ]
 
-RunStatus = Literal["queued", "running", "completed", "needs_review", "failed"]
+RunStatus = Literal["queued", "running", "completed", "needs_review", "failed", "cancelled"]
 Recommendation = Literal["proceed", "hold", "reject"]
 SourceType = Literal["jd", "resume"]
 

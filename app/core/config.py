@@ -19,9 +19,10 @@ class Settings(BaseSettings):
     llm_provider: LLMProviderName = "dashscope"
     openai_base_url: str | None = None
     model_name: str | None = None
-    default_temperature: float = 0.2
+    default_temperature: float = 0.0
     llm_timeout_seconds: float = 180.0
     max_repair_attempts: int = 2
+    enable_generation_cache: bool = True
 
     # Residual-hallucination grounding guards (app.workflows.grounding):
     # gate misattributed claim citations and fabricated numbers into the repair

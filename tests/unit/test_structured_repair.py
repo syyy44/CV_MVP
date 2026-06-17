@@ -12,6 +12,7 @@ from app.llm.structured import (
     _evidence_repair_source_block,
     extract_json_block,
     generate_structured,
+    stable_generation_input_hash,
 )
 from app.storage import repository
 from tests.conftest import ScriptedProvider, make_workflow_context
@@ -27,6 +28,10 @@ class TinySchema(BaseModel):
 VALID = json.dumps({"role_title": "Backend AI Engineer", "seniority": "senior"})
 INVALID_JSON = "Sure! Here is the JSON you asked for: {role_title: oops"
 WRONG_SHAPE = json.dumps({"role_title": "x"})
+
+
+class LiveScriptedProvider(ScriptedProvider):
+    name = "live"
 
 
 def test_extract_json_block_strips_fences_and_prose():
@@ -119,6 +124,52 @@ def test_post_validate_problems_trigger_repair(app_env):
     )
     assert meta.repaired and meta.attempts == 2
     assert parsed.role_title == "Backend AI Engineer"
+
+
+def test_live_generation_cache_ignores_random_document_ids(app_env):
+    messages_a = EXTRACT_JD_RUBRIC.render(
+        jd_document_id="aaaaaaaaaaaa",
+        jd_text="招聘短视频运营，要求熟悉小红书和抖音生态。",
+    )
+    messages_b = EXTRACT_JD_RUBRIC.render(
+        jd_document_id="bbbbbbbbbbbb",
+        jd_text="招聘短视频运营，要求熟悉小红书和抖音生态。",
+    )
+    assert stable_generation_input_hash(messages_a) == stable_generation_input_hash(messages_b)
+
+    provider = LiveScriptedProvider(
+        [
+            VALID,
+            json.dumps({"role_title": "Different Uncached Result", "seniority": "junior"}),
+        ]
+    )
+
+    repository.create_run("run-cache-a", "live", None)
+    ctx_a = make_workflow_context("run-cache-a", provider)
+    ctx_a.mode = "live"
+    first, first_meta = generate_structured(
+        ctx_a,
+        EXTRACT_JD_RUBRIC,
+        TinySchema,
+        {"jd_document_id": "aaaaaaaaaaaa", "jd_text": "same jd text"},
+        node_name="extract_jd_rubric",
+    )
+
+    repository.create_run("run-cache-b", "live", None)
+    ctx_b = make_workflow_context("run-cache-b", provider)
+    ctx_b.mode = "live"
+    second, second_meta = generate_structured(
+        ctx_b,
+        EXTRACT_JD_RUBRIC,
+        TinySchema,
+        {"jd_document_id": "bbbbbbbbbbbb", "jd_text": "same jd text"},
+        node_name="extract_jd_rubric",
+    )
+
+    assert provider.calls == 1
+    assert first.role_title == second.role_title == "Backend AI Engineer"
+    assert first_meta.input_hash == second_meta.input_hash
+    assert first_meta.output_hash == second_meta.output_hash
 
 
 def test_evidence_repair_source_block_points_to_valid_line_range():

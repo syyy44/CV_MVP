@@ -3,6 +3,9 @@ from __future__ import annotations
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
+from app.core.errors import RunCancelledError
+from app.locale import zh_CN as msg
+from app.storage import repository
 from app.workflows.nodes import (
     aggregate_node,
     assemble_node,
@@ -55,6 +58,8 @@ def candidate_graph():
 
 
 def fan_out(state: RunGraphState):
+    if repository.is_run_cancelled(state["ctx"].run_id):
+        raise RunCancelledError(msg.run_cancelled_by_user())
     resumes = state.get("resume_docs", [])
     if not resumes:
         return "aggregate"
@@ -76,6 +81,8 @@ def fan_out(state: RunGraphState):
 
 def process_candidate_node(state: CandidateState) -> dict:
     ctx = state["ctx"]
+    if repository.is_run_cancelled(ctx.run_id):
+        raise RunCancelledError(msg.run_cancelled_by_user())
     resume_doc = state["resume_doc"]
     ctx.ledger.emit(
         "candidate_started",

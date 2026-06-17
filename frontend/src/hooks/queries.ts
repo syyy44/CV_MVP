@@ -98,6 +98,19 @@ export function usePatchDecision(candidateId: string, runId: string | null) {
   });
 }
 
+
+export function useCancelRun(runId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.cancelRun(runId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["run", runId] });
+      queryClient.invalidateQueries({ queryKey: ["runs"] });
+      queryClient.invalidateQueries({ queryKey: ["events", runId] });
+    },
+  });
+}
+
 export function useStartRun(onStarted: (runId: string) => void) {
   const queryClient = useQueryClient();
   return useMutation({

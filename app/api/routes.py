@@ -25,6 +25,7 @@ from app.core.errors import (
     CompareNotComparableError,
     FileTooLargeError,
     MissingDocumentError,
+    RunNotCancellableError,
     RunNotFoundError,
     UnsupportedFileTypeError,
 )
@@ -37,6 +38,7 @@ from app.models.contracts import (
     CandidateRunResult,
     DecisionDossier,
     HumanOverride,
+    RunSummary,
 )
 from app.models.events import DecisionEvent
 from app.models.export import AuditExport, EvalResultSummary
@@ -142,6 +144,21 @@ def get_run(run_id: str) -> RunStatusResponse:
         candidates=repository.get_candidate_results(run_id),
         documents=repository.document_summaries(run_id),
     )
+
+
+@router.post("/api/runs/{run_id}/cancel", response_model=RunSummary)
+def cancel_run(run_id: str) -> RunSummary:
+    run = repository.get_run(run_id)
+    if run is None:
+        raise RunNotFoundError(msg.run_not_found(run_id))
+    if run.status == "cancelled":
+        return run
+    if run.status not in ("queued", "running"):
+        raise RunNotCancellableError(msg.run_not_cancellable(run_id, run.status))
+    repository.cancel_run(run_id)
+    cancelled = repository.get_run(run_id)
+    assert cancelled is not None
+    return cancelled
 
 
 @router.get("/api/runs/{run_id}/events", response_model=list[DecisionEvent])

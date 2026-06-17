@@ -21,6 +21,7 @@ RUN_STATUS_LABELS = {
     "completed": "已完成",
     "needs_review": "待人工复核",
     "failed": "失败",
+    "cancelled": "已停止",
 }
 
 VALIDATION_STATUS_LABELS = {
@@ -52,6 +53,15 @@ def replay_rejects_uploads() -> str:
 
 def run_not_found(run_id: str) -> str:
     return f"未找到运行 {run_id}"
+
+
+def run_not_cancellable(run_id: str, status: str) -> str:
+    label = RUN_STATUS_LABELS.get(status, status)
+    return f"运行 {run_id} 当前状态为「{label}」，不能停止"
+
+
+def run_cancelled_by_user() -> str:
+    return "用户已停止运行"
 
 
 def candidate_not_found(candidate_id: str) -> str:

@@ -10,6 +10,7 @@ import type {
   Recommendation,
   RunCreateResponse,
   RunListItem,
+  RunSummary,
   RunStatusResponse,
   TestDataManifest,
 } from "@/lib/types";
@@ -83,6 +84,17 @@ export const api = {
 
   getEvents(runId: string): Promise<DecisionEvent[]> {
     return getJson<DecisionEvent[]>(`/api/runs/${runId}/events`);
+  },
+
+  async cancelRun(runId: string): Promise<RunSummary> {
+    const response = await fetch(`/api/runs/${runId}/cancel`, {
+      method: "POST",
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) {
+      throw await parseError(response);
+    }
+    return (await response.json()) as RunSummary;
   },
 
   getComparison(

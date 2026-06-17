@@ -55,6 +55,11 @@ class RunNotFoundError(DomainError):
     http_status = 404
 
 
+class RunNotCancellableError(DomainError):
+    code = "run_not_cancellable"
+    http_status = 409
+
+
 class CandidateNotFoundError(DomainError):
     code = "candidate_not_found"
     http_status = 404
@@ -99,6 +104,10 @@ class ReplayFixtureMissingError(DomainError):
 class ParseFailedError(DomainError):
     code = "parse_failed"
     http_status = 422
+
+
+class RunCancelledError(DomainError):
+    code = "run_cancelled"
 
 
 # ---- LLM / structured output (workflow-internal; rescued per candidate) --------

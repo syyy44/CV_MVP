@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -19,17 +20,84 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-from app.core.errors import RepairExhaustedError, StructuredOutputParseError
+from app.core.errors import RepairExhaustedError, RunCancelledError, StructuredOutputParseError
 from app.llm.prompts import REPAIR_STRUCTURED_OUTPUT, PromptTemplate
 from app.locale import zh_CN as msg
 from app.models.contracts import ValidationSummary
 from app.observability.tracing import sanitize_trace_output
+from app.storage import repository
 
 TModel = TypeVar("TModel", bound=BaseModel)
 
 
 def sha256_hex(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+_VOLATILE_PARAM_ID_RE = re.compile(r"((?:document|candidate|run)_id=)[0-9a-f]{12}")
+_VOLATILE_JSON_ID_RE = re.compile(
+    r'("(?:document|candidate|run)_id"\s*:\s*")[0-9a-f]{12}(")'
+)
+
+
+def _normalize_volatile_ids(text: str) -> str:
+    """Remove per-run random IDs from cache identity while preserving content."""
+    text = _VOLATILE_PARAM_ID_RE.sub(r"\1<volatile-id>", text)
+    return _VOLATILE_JSON_ID_RE.sub(r'\1<volatile-id>\2', text)
+
+
+def stable_generation_input_hash(messages: list[dict]) -> str:
+    normalized = [
+        {
+            **message,
+            "content": _normalize_volatile_ids(str(message.get("content", ""))),
+        }
+        for message in messages
+    ]
+    return sha256_hex(
+        json.dumps(normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    )
+
+
+def _structured_cache_key(
+    prompt: PromptTemplate,
+    schema: type[BaseModel],
+    model_name: str,
+    input_hash: str,
+    schema_json: dict,
+) -> str:
+    schema_hash = sha256_hex(
+        json.dumps(schema_json, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    )
+    return sha256_hex(
+        json.dumps(
+            {
+                "kind": "structured_generation.v1",
+                "prompt_name": prompt.name,
+                "prompt_version": prompt.version,
+                "schema_name": schema.__name__,
+                "schema_hash": schema_hash,
+                "model": model_name,
+                "input_hash": input_hash,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+    )
+
+
+def _generation_cache_enabled(ctx) -> bool:
+    return (
+        getattr(ctx, "mode", None) == "live"
+        and getattr(ctx.provider, "name", None) == "live"
+        and getattr(ctx.settings, "enable_generation_cache", True)
+    )
+
+
+def _raise_if_cancelled(ctx) -> None:
+    if repository.is_run_cancelled(ctx.run_id):
+        raise RunCancelledError(msg.run_cancelled_by_user())
 
 
 def extract_json_block(text: str) -> str:
@@ -137,13 +205,64 @@ def generate_structured(
 
     messages = prompt.render(**variables)
 
+    schema_json = schema.model_json_schema()
     meta = GenerationMeta(prompt_name=prompt.name, prompt_version=prompt.version)
-    meta.input_hash = sha256_hex(json.dumps(messages, ensure_ascii=False))
+    meta.input_hash = stable_generation_input_hash(messages)
 
     max_attempts = 1 + ctx.settings.max_repair_attempts
     started = time.monotonic()
     last_problems: list[str] = []
     raw_text = ""
+    cache_enabled = _generation_cache_enabled(ctx)
+    cache_key = _structured_cache_key(
+        prompt,
+        schema,
+        ctx.settings.model_name,
+        meta.input_hash,
+        schema_json,
+    )
+
+    def validate_raw_text(text: str) -> tuple[TModel | None, list[str]]:
+        problems: list[str] = []
+        parsed: TModel | None = None
+        try:
+            # strict=False：容忍字符串值中的裸换行/控制字符（json_object 模式
+            # 下长中文输出的常见缺陷，否则整次尝试因一个字符报废）。
+            payload = json.loads(extract_json_block(text), strict=False)
+            parsed = schema.model_validate(payload)
+        except StructuredOutputParseError as exc:
+            problems = [exc.message]
+        except json.JSONDecodeError as exc:
+            problems = [f"invalid JSON: {exc}"]
+        except ValidationError as exc:
+            problems = _validation_messages(exc)
+
+        if parsed is not None and post_validate is not None and not problems:
+            problems = post_validate(parsed)
+        return parsed, problems
+
+    if cache_enabled:
+        _raise_if_cancelled(ctx)
+        cached = repository.get_structured_generation_cache(cache_key)
+        if cached is not None:
+            raw_text = str(cached["output_text"])
+            parsed, problems = validate_raw_text(raw_text)
+            if parsed is not None and not problems:
+                meta.model = str(cached["model"])
+                meta.output_hash = str(cached["output_hash"])
+                meta.latency_ms = int((time.monotonic() - started) * 1000)
+                ctx.ledger.add_validation(
+                    ValidationSummary(
+                        schema_name=schema.__name__,
+                        node_name=node_name,
+                        candidate_id=candidate_id,
+                        status="valid",
+                        error_count=0,
+                        repair_attempts=0,
+                        messages=[],
+                    )
+                )
+                return parsed, meta
 
     temperature = ctx.settings.default_temperature
     with ctx.tracer.generation(
@@ -159,6 +278,7 @@ def generate_structured(
         temperature=temperature,
     ) as generation:
         for attempt in range(1, max_attempts + 1):
+            _raise_if_cancelled(ctx)
             meta.attempts = attempt
             ctx.ledger.emit(
                 "llm_call_started",
@@ -173,9 +293,10 @@ def generate_structured(
                 messages,
                 fixture_key=fixture_key,
                 temperature=temperature,
-                response_schema=schema.model_json_schema(),
+                response_schema=schema_json,
                 response_schema_name=schema.__name__,
             )
+            _raise_if_cancelled(ctx)
             raw_text = result.text
             meta.model = result.model
             meta.input_tokens += result.input_tokens
@@ -194,22 +315,7 @@ def generate_structured(
                 },
             )
 
-            problems: list[str] = []
-            parsed: TModel | None = None
-            try:
-                # strict=False：容忍字符串值中的裸换行/控制字符（json_object 模式
-                # 下长中文输出的常见缺陷，否则整次尝试因一个字符报废）。
-                payload = json.loads(extract_json_block(raw_text), strict=False)
-                parsed = schema.model_validate(payload)
-            except StructuredOutputParseError as exc:
-                problems = [exc.message]
-            except json.JSONDecodeError as exc:
-                problems = [f"invalid JSON: {exc}"]
-            except ValidationError as exc:
-                problems = _validation_messages(exc)
-
-            if parsed is not None and post_validate is not None and not problems:
-                problems = post_validate(parsed)
+            parsed, problems = validate_raw_text(raw_text)
 
             if parsed is not None and not problems:
                 meta.latency_ms = int((time.monotonic() - started) * 1000)
@@ -249,6 +355,17 @@ def generate_structured(
                         messages=meta.errors[:10],
                     )
                 )
+                if cache_enabled:
+                    repository.save_structured_generation_cache(
+                        cache_key=cache_key,
+                        prompt_name=prompt.name,
+                        prompt_version=prompt.version,
+                        schema_name=schema.__name__,
+                        model=meta.model,
+                        input_hash=meta.input_hash,
+                        output_hash=meta.output_hash,
+                        output_text=raw_text,
+                    )
                 return parsed, meta
 
             last_problems = problems
